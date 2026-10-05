@@ -1,10 +1,13 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
 import mongoose from 'mongoose';
 import { config } from './config/env.js';
 import { logger } from './config/logger.js';
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
 
 const app = express();
 
@@ -13,6 +16,7 @@ app.use(pinoHttp({ logger }));
 app.use(helmet());
 app.use(cors({ origin: config.clientOrigin, credentials: true }));
 app.use(express.json({ limit: '10kb' }));
+app.use(cookieParser());
 
 app.get('/health', (req, res) => {
   res.json({
@@ -20,6 +24,9 @@ app.get('/health', (req, res) => {
     db: mongoose.connection.readyState === 1 ? 'up' : 'down',
   });
 });
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
