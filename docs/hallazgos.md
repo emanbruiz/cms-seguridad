@@ -13,3 +13,34 @@ No hay límite general de peticiones, así que se puede recorrer el listado púb
 Los intentos de acceso a posts ajenos quedan en el log (evidencia para el SIEM).
 SCA (frontend): @tailwindcss/typography arrastraba postcss-selector-parser con una vulnerabilidad moderada (consumo de CPU, solo en compilación). Tratamiento: eliminar la dependencia y usar CSS propio.
 Las imágenes en un post Markdown pueden apuntar a sitios externos y revelar la IP del lector. Se mitiga con la cabecera CSP img-src 'self' en Nginx (Fase 8).
+
+## Fase 1: backend base
+
+Hallazgos:
+
+- `/health` es público y revela si la base de datos está caída (Information Disclosure, bajo).
+- Contraseñas de desarrollo cortas y escritas en la terminal (quedan en el historial). En producción se rotan y se usan secretos gestionados (medio).
+- En desarrollo no hay TLS hacia la API ni hacia MongoDB. En producción se usa TLS 1.3 (medio).
+- `express-mongo-sanitize` es incompatible con Express 5 y no tiene mantenimiento. Se descartó y se reemplazó por Zod + `sanitizeFilter` de Mongoose (SCA, medio).
+
+Controles aplicados:
+
+- MongoDB solo escucha en 127.0.0.1 y la app usa `cms_app` con `readWrite` solo sobre `cms` (menor privilegio).
+- La API escucha solo en 127.0.0.1, con CORS limitado a un origen y body JSON de 10 KB como máximo.
+- Helmet agrega cabeceras de seguridad y se desactivó `X-Powered-By`.
+- Los logs de pino ocultan `authorization` y `cookie`.
+- El `.env` está fuera del repositorio y el servidor no arranca si faltan variables o si `JWT_SECRET` tiene menos de 32 caracteres.
+- `npm audit` inicial: 0 vulnerabilidades.
+
+## Fase 4: frontend
+
+- El XSS almacenado se mitiga porque `react-markdown` no renderiza HTML crudo y neutraliza URLs `javascript:`. Evidencia: post "Prueba XSS".
+- La sesión vive en una cookie `httpOnly` con `SameSite=Strict`. `document.cookie` no la expone y no se usa `localStorage`.
+- Los enlaces del contenido solo reciben `href` y `title`, y se abren con `rel="noopener noreferrer"`.
+- SCA: `@tailwindcss/typography` arrastraba `postcss-selector-parser` con una vulnerabilidad moderada (solo en compilación). Tratamiento: eliminar la dependencia y usar CSS propio.
+- Las imágenes externas en Markdown pueden revelar la IP del lector. Se mitiga con `img-src 'self'` en la CSP de Nginx (Fase 8).
+- El proxy de Vite existe solo en desarrollo y en producción lo reemplaza Nginx.
+- El frontend todavía no envía CSP propia (se configura en Nginx).
+- Mostrar el rol en la interfaz no es control de acceso: la validación real está en el backend.
+- ESLint (análisis estático) sin errores y `npm audit` en 0.
+- En desarrollo la cookie de sesión no lleva el atributo `Secure` (HTTP). En producción se activa con `NODE_ENV=production` y TLS 1.3 en Nginx.
