@@ -10,6 +10,6 @@ if (!email || !ROLES.includes(role)) {
 }
 
 await mongoose.connect(process.env.MONGO_URI);
-const user = await User.findOneAndUpdate({ email }, { role }, { new: true });
+const user = await User.findOneAndUpdate({ email }, { role }, { returnDocument: 'after' });
 console.log(user ? `${user.email} ahora es ${user.role}` : 'Usuario no encontrado');
 await mongoose.disconnect();
