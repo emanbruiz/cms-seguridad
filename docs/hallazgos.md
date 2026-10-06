@@ -44,3 +44,13 @@ Controles aplicados:
 - Mostrar el rol en la interfaz no es control de acceso: la validación real está en el backend.
 - ESLint (análisis estático) sin errores y `npm audit` en 0.
 - En desarrollo la cookie de sesión no lleva el atributo `Secure` (HTTP). En producción se activa con `NODE_ENV=production` y TLS 1.3 en Nginx.
+
+## Fase 5: panel de administración
+
+- Las rutas del panel se protegen en el frontend solo por experiencia de usuario. El control real está en el backend, verificado con un `403` desde la consola con sesión de lector.
+- El cambio de rol es solo para admin, valida el ID y el rol con una lista cerrada, no permite cambiar el propio rol (siempre queda al menos un admin) y queda registrado en el log.
+- El rol se lee de la base de datos en cada petición, así que un cambio o una baja de privilegios aplica de inmediato aunque la sesión siga abierta.
+- Riesgo: una cuenta admin comprometida puede escalar privilegios a otras cuentas. No hay confirmación adicional ni MFA todavía (Fase 7).
+- El borrado de posts es físico, sin papelera, y solo queda traza en el log.
+- No hay token CSRF: las operaciones PATCH y DELETE se apoyan en `SameSite=Strict`, en el contenido JSON obligatorio y en CORS restringido.
+- El editor de Markdown usa el mismo renderizador seguro que la vista pública (`MarkdownView`), así que la vista previa no abre un camino nuevo de XSS.

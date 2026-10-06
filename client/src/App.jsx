@@ -1,9 +1,15 @@
 import { Link, Route, Routes } from 'react-router';
 import { useAuth } from './context/AuthContext.jsx';
+import RequireRole from './components/RequireRole.jsx';
 import Home from './pages/Home.jsx';
 import Post from './pages/Post.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import Dashboard from './pages/admin/Dashboard.jsx';
+import PostForm from './pages/admin/PostForm.jsx';
+import Users from './pages/admin/Users.jsx';
+
+const STAFF = ['editor', 'admin'];
 
 function Navbar() {
   const { user, logout } = useAuth();
@@ -14,6 +20,9 @@ function Navbar() {
         <div className="flex items-center gap-4 text-sm">
           {user ? (
             <>
+              {STAFF.includes(user.role) && (
+                <Link to="/admin" className="text-slate-700 hover:underline">Panel</Link>
+              )}
               <span className="text-slate-600">{user.name} ({user.role})</span>
               <button onClick={logout} className="rounded bg-slate-900 px-3 py-1 text-white hover:bg-slate-700">Salir</button>
             </>
@@ -39,6 +48,10 @@ export default function App() {
           <Route path="/posts/:slug" element={<Post />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/admin" element={<RequireRole roles={STAFF}><Dashboard /></RequireRole>} />
+          <Route path="/admin/posts/new" element={<RequireRole roles={STAFF}><PostForm /></RequireRole>} />
+          <Route path="/admin/posts/:id/edit" element={<RequireRole roles={STAFF}><PostForm /></RequireRole>} />
+          <Route path="/admin/users" element={<RequireRole roles={['admin']}><Users /></RequireRole>} />
           <Route path="*" element={<p>Página no encontrada.</p>} />
         </Routes>
       </main>

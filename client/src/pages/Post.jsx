@@ -1,15 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import Markdown from 'react-markdown';
+import MarkdownView from '../components/MarkdownView.jsx';
 import { api } from '../api.js';
 
-const components = {
-  a: ({ href, title, children }) => (
-    <a href={href} title={title} target="_blank" rel="noopener noreferrer">
-      {children}
-    </a>
-  ),
-};
 export default function Post() {
   const { slug } = useParams();
   const [post, setPost] = useState(null);
@@ -31,9 +24,7 @@ export default function Post() {
       <p className="mb-4 text-sm text-slate-500">
         {post.author?.name} · {new Date(post.publishedAt).toLocaleDateString('es-GT')}
       </p>
-      <div className="markdown">
-        <Markdown components={components}>{post.content}</Markdown>
-      </div>
+      <MarkdownView>{post.content}</MarkdownView>
     </article>
   );
 }
