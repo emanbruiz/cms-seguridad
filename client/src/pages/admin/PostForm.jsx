@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import MarkdownView from '../../components/MarkdownView.jsx';
-import { api } from '../../api.js';
+import { api, uploadImage } from '../../api.js';
 
 export default function PostForm() {
   const { id } = useParams();
@@ -11,6 +11,7 @@ export default function PostForm() {
   const [loading, setLoading] = useState(editing);
   const [errors, setErrors] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!editing) return;
@@ -21,6 +22,22 @@ export default function PostForm() {
   }, [id, editing]);
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+
+  const onPickImage = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setErrors([]);
+    setUploading(true);
+    try {
+      const { url } = await uploadImage(file);
+      setForm((f) => ({ ...f, content: `${f.content}${f.content ? '\n\n' : ''}![imagen](${url})\n` }));
+    } catch (err) {
+      setErrors([err.message]);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -52,6 +69,10 @@ export default function PostForm() {
       <form onSubmit={onSubmit} className="space-y-3">
         <input className={input} placeholder="Título" value={form.title} onChange={update('title')} required minLength={3} maxLength={150} />
         <textarea className={`${input} font-mono`} rows={12} placeholder="Contenido en Markdown" value={form.content} onChange={update('content')} required maxLength={20000} />
+        <label className="block text-sm text-slate-600">
+          {uploading ? 'Subiendo imagen...' : 'Subir imagen (PNG, JPG o WEBP, máximo 2 MB)'}
+          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onPickImage} disabled={uploading} className="mt-1 block" />
+        </label>
         <select className={input} value={form.status} onChange={update('status')}>
           <option value="borrador">Borrador</option>
           <option value="publicado">Publicado</option>

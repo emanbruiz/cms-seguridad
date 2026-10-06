@@ -16,3 +16,11 @@ export const registerLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Demasiados registros desde esta IP, intentá más tarde' },
 });
+
+export const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Demasiadas subidas, intentá más tarde' },
+});

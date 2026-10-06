@@ -54,3 +54,21 @@ Controles aplicados:
 - El borrado de posts es físico, sin papelera, y solo queda traza en el log.
 - No hay token CSRF: las operaciones PATCH y DELETE se apoyan en `SameSite=Strict`, en el contenido JSON obligatorio y en CORS restringido.
 - El editor de Markdown usa el mismo renderizador seguro que la vista pública (`MarkdownView`), así que la vista previa no abre un camino nuevo de XSS.
+
+## Fase 6: subida de imágenes
+
+Controles aplicados:
+
+- El tipo de archivo se valida por su contenido (primeros bytes) con `file-type`, sin confiar en la extensión ni en el `Content-Type` del cliente. Solo PNG, JPG y WEBP; el SVG se rechaza por poder contener scripts.
+- Límites: 2 MB, un archivo por petición y 20 subidas por hora por IP. El archivo se valida en memoria y solo se escribe a disco si pasa.
+- Los nombres son aleatorios (UUID), la carpeta `uploads/` está fuera del repositorio y la ruta de descarga se valida con una expresión regular (sin path traversal).
+- Las imágenes se sirven con `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` y `Cross-Origin-Resource-Policy: same-origin`.
+- Solo el dueño o un admin puede borrar una imagen (BOLA verificado con `403`). Las subidas rechazadas y los accesos denegados quedan en el log.
+- El renderizador de Markdown solo permite imágenes propias (`/api/media/<uuid>.<ext>`) y bloquea las externas, lo que evita que un post revele la IP del lector.
+
+Riesgos residuales:
+
+- Las imágenes no se re-codifican: pueden llevar metadatos (EXIF/GPS) o archivos políglota que pasan la validación de cabecera.
+- No hay análisis antimalware ni cuota de almacenamiento por usuario.
+- El disco local no escala. En la nube iría a un bucket privado (S3) detrás de un CDN.
+- Las imágenes son públicas por URL no secuencial: quien conozca el enlace puede verla.

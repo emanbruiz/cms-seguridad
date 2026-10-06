@@ -14,3 +14,16 @@ export async function api(path, { method = 'GET', body } = {}) {
   }
   return data;
 }
+
+export async function uploadImage(file) {
+  const body = new FormData();
+  body.append('file', file);
+  const res = await fetch('/api/media', { method: 'POST', credentials: 'same-origin', body });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error || 'Error de red');
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
