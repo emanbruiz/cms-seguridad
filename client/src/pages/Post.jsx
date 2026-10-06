@@ -4,9 +4,12 @@ import Markdown from 'react-markdown';
 import { api } from '../api.js';
 
 const components = {
-  a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+  a: ({ href, title, children }) => (
+    <a href={href} title={title} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  ),
 };
-
 export default function Post() {
   const { slug } = useParams();
   const [post, setPost] = useState(null);
