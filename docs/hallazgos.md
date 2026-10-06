@@ -1,4 +1,15 @@
-El contenido se guarda en Markdown crudo, y si el frontend lo muestra sin sanitizar hay riesgo de XSS almacenado. Se mitiga en la Fase 4 con DOMPurify y la CSP.
-El 403 en un post ajeno confirma que el ID existe. Es un riesgo bajo porque son ObjectId no secuenciales.
-No hay límite general de peticiones: el listado público se puede recorrer completo con paginación, y no hay freno contra spam al crear posts. Es un buen candidato para el WAF y el rate limit de la Fase 6.
-Los intentos de acceso a posts ajenos quedan registrados en el log (evidencia para el SIEM).
+Fase 2
+
+El 409 al registrar un correo existente permite enumerar usuarios.
+La protección CSRF depende solo de SameSite=Strict y de CORS restringido, sin token CSRF.
+Los tokens duran 30 minutos y no se pueden revocar antes.
+El límite de intentos es por IP y vive en memoria, así que se reinicia con el servidor.
+
+Fase 3
+
+El contenido se guarda como Markdown crudo, y mostrarlo sin sanitizar daría XSS almacenado (se mitiga en la Fase 4).
+El 403 en un post ajeno confirma que el ID existe (riesgo bajo, los ID no son secuenciales).
+No hay límite general de peticiones, así que se puede recorrer el listado público completo y crear posts en masa.
+Los intentos de acceso a posts ajenos quedan en el log (evidencia para el SIEM).
+SCA (frontend): @tailwindcss/typography arrastraba postcss-selector-parser con una vulnerabilidad moderada (consumo de CPU, solo en compilación). Tratamiento: eliminar la dependencia y usar CSS propio.
+Las imágenes en un post Markdown pueden apuntar a sitios externos y revelar la IP del lector. Se mitiga con la cabecera CSP img-src 'self' en Nginx (Fase 8).
