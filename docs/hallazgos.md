@@ -112,3 +112,22 @@ Riesgos residuales:
 
 - Detección: los intentos de verificación de MFA se atribuyen al usuario en la auditoría (antes aparecían sin identificar), lo que permite correlacionar fallos por cuenta en el SIEM.
 - Prueba de reuso: un código ya usado que se presenta de nuevo dentro de 90 s se rechaza con `401`.
+
+## Fase 8A: contenedores (Docker Compose)
+
+Controles aplicados:
+
+- MongoDB y la API no publican puertos: viven en una red interna sin salida a internet. Solo `web` escucha, y únicamente en 127.0.0.1:8080. La ruta `/health` de la API ya no queda expuesta (cierra el hallazgo de la Fase 1).
+- API y web corren sin root, con sistema de archivos de solo lectura, `cap_drop: ALL`, `no-new-privileges`, `tmpfs` para temporales y límites de memoria y de procesos. Verificado con `id`, `touch` y `CapEff`.
+- Imagen de la API en dos etapas: las herramientas de compilación (python3, make, g++) solo existen en la etapa de construcción. La imagen final trae solo dependencias de producción (`npm ci --omit=dev`) y se verifica que `argon2` carga.
+- `.dockerignore` evita que `.env` y `node_modules` entren a las imágenes. Los secretos del compose están en un `.env` ignorado por Git y se generan aleatorios.
+- Healthchecks y orden de arranque (la API espera a la base, la web espera a la API).
+- `trust proxy` configurable para que el límite de intentos y la auditoría vean la IP real del cliente detrás de Nginx. Nginx oculta su versión y limita el cuerpo a 3 MB.
+
+Riesgos residuales:
+
+- Los secretos viajan como variables de entorno y se pueden ver con `docker inspect`. En producción se usarían Docker secrets o un gestor de secretos (KMS).
+- El contenedor de MongoDB arranca como root por el entrypoint oficial (luego baja a `mongodb`) y no se le quitan capacidades para no romper ese arranque.
+- Las imágenes usan etiquetas flotantes (`mongo:8`, `stable-alpine`). En producción se fijarían por digest.
+- Sin TLS todavía y con cookie `Secure` desactivada (HTTP en local). Se resuelve en la 8B.
+- El volumen de `uploads` no está cifrado y las imágenes base pueden traer CVEs (se escanean con Trivy en la etapa 10).
