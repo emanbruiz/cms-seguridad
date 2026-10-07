@@ -25,8 +25,8 @@ export function auditRequests(req, res, next) {
     AuditLog.create({
       action: `${req.method} ${normalizePath(req.originalUrl)}`,
       status: res.statusCode,
-      userId: req.user?._id ?? null,
-      email: req.user?.email ?? bodyEmail,
+      userId: req.user?._id ?? req.auditUser?._id ?? null,
+      email: req.user?.email ?? req.auditUser?.email ?? bodyEmail,
       ip: req.ip,
       userAgent: String(req.get('user-agent') ?? '').slice(0, 200),
     }).catch((err) => req.log.error({ err }, 'no se pudo guardar la auditoría'));

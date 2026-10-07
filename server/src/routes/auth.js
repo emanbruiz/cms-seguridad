@@ -120,6 +120,7 @@ router.post('/mfa/verify', mfaLimiter, validate(mfaCodeSchema), async (req, res)
   if (!user || !user.mfaEnabled) {
     return res.status(401).json({ error: 'La verificación expiró, ingresá de nuevo' });
   }
+  req.auditUser = user;
 
   if (user.mfaLockUntil && user.mfaLockUntil > new Date()) {
     req.log.warn({ userId: String(user._id) }, 'mfa bloqueado');

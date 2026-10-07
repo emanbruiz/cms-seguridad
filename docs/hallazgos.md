@@ -1,19 +1,3 @@
-Fase 2
-
-El 409 al registrar un correo existente permite enumerar usuarios.
-La protección CSRF depende solo de SameSite=Strict y de CORS restringido, sin token CSRF.
-Los tokens duran 30 minutos y no se pueden revocar antes.
-El límite de intentos es por IP y vive en memoria, así que se reinicia con el servidor.
-
-Fase 3
-
-El contenido se guarda como Markdown crudo, y mostrarlo sin sanitizar daría XSS almacenado (se mitiga en la Fase 4).
-El 403 en un post ajeno confirma que el ID existe (riesgo bajo, los ID no son secuenciales).
-No hay límite general de peticiones, así que se puede recorrer el listado público completo y crear posts en masa.
-Los intentos de acceso a posts ajenos quedan en el log (evidencia para el SIEM).
-SCA (frontend): @tailwindcss/typography arrastraba postcss-selector-parser con una vulnerabilidad moderada (consumo de CPU, solo en compilación). Tratamiento: eliminar la dependencia y usar CSS propio.
-Las imágenes en un post Markdown pueden apuntar a sitios externos y revelar la IP del lector. Se mitiga con la cabecera CSP img-src 'self' en Nginx (Fase 8).
-
 ## Fase 1: backend base
 
 Hallazgos:
@@ -31,6 +15,22 @@ Controles aplicados:
 - Los logs de pino ocultan `authorization` y `cookie`.
 - El `.env` está fuera del repositorio y el servidor no arranca si faltan variables o si `JWT_SECRET` tiene menos de 32 caracteres.
 - `npm audit` inicial: 0 vulnerabilidades.
+
+Fase 2
+
+El 409 al registrar un correo existente permite enumerar usuarios.
+La protección CSRF depende solo de SameSite=Strict y de CORS restringido, sin token CSRF.
+Los tokens duran 30 minutos y no se pueden revocar antes.
+El límite de intentos es por IP y vive en memoria, así que se reinicia con el servidor.
+
+Fase 3
+
+El contenido se guarda como Markdown crudo, y mostrarlo sin sanitizar daría XSS almacenado (se mitiga en la Fase 4).
+El 403 en un post ajeno confirma que el ID existe (riesgo bajo, los ID no son secuenciales).
+No hay límite general de peticiones, así que se puede recorrer el listado público completo y crear posts en masa.
+Los intentos de acceso a posts ajenos quedan en el log (evidencia para el SIEM).
+SCA (frontend): @tailwindcss/typography arrastraba postcss-selector-parser con una vulnerabilidad moderada (consumo de CPU, solo en compilación). Tratamiento: eliminar la dependencia y usar CSS propio.
+Las imágenes en un post Markdown pueden apuntar a sitios externos y revelar la IP del lector. Se mitiga con la cabecera CSP img-src 'self' en Nginx (Fase 8).
 
 ## Fase 4: frontend
 
@@ -109,3 +109,6 @@ Riesgos residuales:
 - TOTP es vulnerable a phishing en tiempo real (proxy inverso). WebAuthn/passkeys lo resolvería.
 - El bloqueo de cuenta permite un ataque de denegación dirigido contra un usuario conocido.
 - No hay opción en la interfaz para desactivar o regenerar el MFA, y no se notifica al usuario cuando se bloquea su cuenta.
+
+- Detección: los intentos de verificación de MFA se atribuyen al usuario en la auditoría (antes aparecían sin identificar), lo que permite correlacionar fallos por cuenta en el SIEM.
+- Prueba de reuso: un código ya usado que se presenta de nuevo dentro de 90 s se rechaza con `401`.
