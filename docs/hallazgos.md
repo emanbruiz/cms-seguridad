@@ -89,3 +89,23 @@ Riesgos residuales:
 - Las lecturas (GET) y las rutas inexistentes (404) no se auditan, así que el reconocimiento queda sin registrar aquí y lo cubre el WAF/Nginx.
 - La IP registrada será la del proxy hasta configurar `trust proxy` detrás de Nginx.
 - No hay alertas automáticas, solo consulta manual.
+
+## Fase 7B: MFA (TOTP)
+
+Controles aplicados:
+
+- TOTP estándar (RFC 6238: 6 dígitos, 30 s) con app de autenticación. La semilla se guarda cifrada con AES-256-GCM y la llave (`MFA_ENC_KEY`) vive fuera de la base de datos, así que una filtración de la base no expone las semillas.
+- Login en dos pasos: tras la clave se entrega un token temporal de 5 minutos en una cookie aparte con `purpose: mfa`. No sirve como sesión (verificado con `401`, incluso colocándolo en la cookie de sesión).
+- MFA obligatorio para el admin: sin MFA verificado no accede a ninguna ruta de admin (`403 MFA_REQUIRED`). Al activar el MFA se reemite la sesión.
+- Fuerza bruta: 5 intentos por IP cada 15 minutos y bloqueo de la cuenta por 15 minutos tras 5 fallos (contador atómico en la base).
+- Reuso: un código ya usado se rechaza durante 90 segundos.
+- Los intentos y bloqueos quedan en la auditoría (`401` y `429` en `/api/auth/mfa/verify`).
+
+Riesgos residuales:
+
+- Sin códigos de recuperación: perder el teléfono exige un reinicio por script con acceso al servidor (`reset-mfa.js`).
+- La llave de cifrado está en el mismo servidor que los datos. En producción iría en un gestor de secretos o KMS. Perderla invalida todos los MFA.
+- El reuso de código se controla de forma secuencial: dos peticiones simultáneas con el mismo código podrían pasar ambas.
+- TOTP es vulnerable a phishing en tiempo real (proxy inverso). WebAuthn/passkeys lo resolvería.
+- El bloqueo de cuenta permite un ataque de denegación dirigido contra un usuario conocido.
+- No hay opción en la interfaz para desactivar o regenerar el MFA, y no se notifica al usuario cuando se bloquea su cuenta.

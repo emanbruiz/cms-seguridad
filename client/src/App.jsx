@@ -9,8 +9,10 @@ import Dashboard from './pages/admin/Dashboard.jsx';
 import PostForm from './pages/admin/PostForm.jsx';
 import Users from './pages/admin/Users.jsx';
 import AuditLog from './pages/admin/AuditLog.jsx';
+import Security from './pages/Security.jsx';
 
 const STAFF = ['editor', 'admin'];
+const ALL_ROLES = ['lector', 'editor', 'admin'];
 
 function Navbar() {
   const { user, logout } = useAuth();
@@ -24,6 +26,7 @@ function Navbar() {
               {STAFF.includes(user.role) && (
                 <Link to="/admin" className="text-slate-700 hover:underline">Panel</Link>
               )}
+              <Link to="/security" className="text-slate-700 hover:underline">Seguridad</Link>
               <span className="text-slate-600">{user.name} ({user.role})</span>
               <button onClick={logout} className="rounded bg-slate-900 px-3 py-1 text-white hover:bg-slate-700">Salir</button>
             </>
@@ -54,6 +57,7 @@ export default function App() {
           <Route path="/admin/posts/:id/edit" element={<RequireRole roles={STAFF}><PostForm /></RequireRole>} />
           <Route path="/admin/users" element={<RequireRole roles={['admin']}><Users /></RequireRole>} />
           <Route path="/admin/audit" element={<RequireRole roles={['admin']}><AuditLog /></RequireRole>} />
+          <Route path="/security" element={<RequireRole roles={ALL_ROLES} allowWithoutMfa><Security /></RequireRole>} />
           <Route path="*" element={<p>Página no encontrada.</p>} />
         </Routes>
       </main>

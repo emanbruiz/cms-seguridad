@@ -12,3 +12,7 @@ export const loginSchema = z.strictObject({
   email,
   password: z.string().min(1).max(128),
 });
+
+export const mfaCodeSchema = z.strictObject({
+  code: z.string().trim().min(6).max(6),
+});

@@ -24,3 +24,12 @@ export const uploadLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Demasiadas subidas, intentá más tarde' },
 });
+
+export const mfaLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: { error: 'Demasiados intentos de código, intentá de nuevo en 15 minutos' },
+});
