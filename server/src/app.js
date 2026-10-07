@@ -14,6 +14,7 @@ import mediaRoutes from './routes/media.js';
 import auditRoutes from './routes/audit.js';
 
 const app = express();
+if (config.trustProxy) app.set('trust proxy', config.trustProxy);
 
 app.disable('x-powered-by');
 app.use(pinoHttp({ logger }));

@@ -8,7 +8,7 @@ export const MFA_COOKIE_NAME = 'mfa_token';
 export const cookieOptions = {
   httpOnly: true,
   sameSite: 'strict',
-  secure: config.nodeEnv === 'production',
+    secure: config.cookieSecure,
   maxAge: 30 * 60 * 1000,
 };
 

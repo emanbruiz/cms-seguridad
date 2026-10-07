@@ -16,12 +16,18 @@ if (!/^[a-f0-9]{64}$/i.test(process.env.MFA_ENC_KEY)) {
   process.exit(1);
 }
 
+const nodeEnv = process.env.NODE_ENV || 'development';
+
 export const config = {
   port: Number(process.env.PORT) || 4000,
   host: process.env.HOST || '127.0.0.1',
   mongoUri: process.env.MONGO_URI,
   jwtSecret: process.env.JWT_SECRET,
   mfaKey: Buffer.from(process.env.MFA_ENC_KEY, 'hex'),
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv,
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  trustProxy: Number(process.env.TRUST_PROXY) || 0,
+  cookieSecure: process.env.COOKIE_SECURE
+    ? process.env.COOKIE_SECURE === 'true'
+    : nodeEnv === 'production',
 };
