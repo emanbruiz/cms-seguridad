@@ -37,7 +37,10 @@ export default function Dashboard() {
         </h1>
         <div className="flex gap-2 text-sm">
           {user.role === 'admin' && (
-            <Link to="/admin/users" className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-100">Usuarios</Link>
+            <>
+              <Link to="/admin/users" className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-100">Usuarios</Link>
+              <Link to="/admin/audit" className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-100">Auditoría</Link>
+            </>
           )}
           <Link to="/admin/posts/new" className="rounded bg-slate-900 px-3 py-1 text-white hover:bg-slate-700">Nuevo post</Link>
         </div>

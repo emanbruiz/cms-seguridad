@@ -6,10 +6,12 @@ import pinoHttp from 'pino-http';
 import mongoose from 'mongoose';
 import { config } from './config/env.js';
 import { logger } from './config/logger.js';
+import { auditRequests } from './middleware/audit.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import postRoutes from './routes/posts.js';
 import mediaRoutes from './routes/media.js';
+import auditRoutes from './routes/audit.js';
 
 const app = express();
 
@@ -20,6 +22,7 @@ app.use(cors({ origin: config.clientOrigin, credentials: true }));
 app.use('/api/posts', express.json({ limit: '100kb' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
+app.use(auditRequests);
 
 app.get('/health', (req, res) => {
   res.json({
@@ -32,6 +35,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/audit', auditRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });

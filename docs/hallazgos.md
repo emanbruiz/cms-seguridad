@@ -72,3 +72,20 @@ Riesgos residuales:
 - No hay análisis antimalware ni cuota de almacenamiento por usuario.
 - El disco local no escala. En la nube iría a un bucket privado (S3) detrás de un CDN.
 - Las imágenes son públicas por URL no secuencial: quien conozca el enlace puede verla.
+- SCA / cadena de suministro: npm avisa que `argon2` ejecuta un script de instalación (`node-gyp rebuild`) que no está aprobado en `allowScripts`. Es el único paquete con script de instalación. Se revisa con `npm install-scripts ls` y se decide su aprobación explícita al armar la imagen Docker (Fase 8).
+
+## Fase 7A: auditoría persistente
+
+Controles aplicados:
+
+- Todas las operaciones de escritura (POST, PUT, PATCH y DELETE) quedan en la colección `AuditLog`: acción, estado HTTP, usuario, IP y user-agent. Incluye los logins fallidos y los accesos rechazados (401, 403 y 429).
+- No se guardan cuerpos de petición, contraseñas ni tokens (solo el correo en las rutas de autenticación).
+- Retención de 90 días mediante un índice TTL.
+- La consulta es solo para admin, con paginación topada a 100 registros.
+
+Riesgos residuales:
+
+- Repudiation: el usuario de la aplicación (`cms_app`) tiene `readWrite`, así que una vulnerabilidad en la app podría alterar o borrar la auditoría. Se mitiga enviando los registros a un SIEM externo o con un usuario de base de datos de solo inserción.
+- Las lecturas (GET) y las rutas inexistentes (404) no se auditan, así que el reconocimiento queda sin registrar aquí y lo cubre el WAF/Nginx.
+- La IP registrada será la del proxy hasta configurar `trust proxy` detrás de Nginx.
+- No hay alertas automáticas, solo consulta manual.

@@ -8,6 +8,7 @@ import Register from './pages/Register.jsx';
 import Dashboard from './pages/admin/Dashboard.jsx';
 import PostForm from './pages/admin/PostForm.jsx';
 import Users from './pages/admin/Users.jsx';
+import AuditLog from './pages/admin/AuditLog.jsx';
 
 const STAFF = ['editor', 'admin'];
 
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/admin/posts/new" element={<RequireRole roles={STAFF}><PostForm /></RequireRole>} />
           <Route path="/admin/posts/:id/edit" element={<RequireRole roles={STAFF}><PostForm /></RequireRole>} />
           <Route path="/admin/users" element={<RequireRole roles={['admin']}><Users /></RequireRole>} />
+          <Route path="/admin/audit" element={<RequireRole roles={['admin']}><AuditLog /></RequireRole>} />
           <Route path="*" element={<p>Página no encontrada.</p>} />
         </Routes>
       </main>
