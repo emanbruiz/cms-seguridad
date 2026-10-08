@@ -15,5 +15,6 @@ COPY src ./src
 COPY scripts ./scripts
 RUN mkdir -p /app/uploads && chown node:node /app/uploads && node -e "import('argon2').then(() => console.log('argon2 ok'))"
 USER node
+HEALTHCHECK --interval=15s --timeout=5s --retries=5 CMD ["node", "-e", "fetch('http://127.0.0.1:4000/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
 EXPOSE 4000
 CMD ["node", "src/server.js"]

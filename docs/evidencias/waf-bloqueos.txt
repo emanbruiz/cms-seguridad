@@ -1,0 +1,84 @@
+﻿
+waf-1  | 2026/10/08 03:43:41 [error] 612#612: *26 [client 172.18.0.1] ModSecurity: Access denied with code 403 (phase 2). Matched "Operator `Ge' with parameter `5' against variable 
+`TX:BLOCKING_INBOUND_ANOMALY_SCORE' (Value: `5' ) [file "/etc/modsecurity.d/owasp-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf"] [line "222"] [id "949110"] [rev ""] [msg "Inbound Anomaly Score Exceeded (Total 
+Score: 5)"] [data ""] [severity "0"] [ver "OWASP_CRS/4.30.0"] [maturity "0"] [accuracy "0"] [tag "modsecurity"] [tag "anomaly-evaluation"] [tag "OWASP_CRS"] [hostname "localhost"] [uri "/api/posts"] [unique_id 
+"179143102149.528071"] [ref ""], client: 172.18.0.1, server: localhost, request: "GET /api/posts?page=1%27%20OR%20%271%27=%271 HTTP/1.1", host: "localhost:8443"
+waf-1  | {"transaction":{"client_ip":"172.18.0.1","time_stamp":"Thu Oct  8 03:43:41 2026","server_id":"d532849da7390d24d52b93242928d0f89e26e7f5","client_port":41496,"host_ip":"172.18.0.2","host_port":8443,"uniqu
+e_id":"179143102149.528071","is_interrupted":true,"request":{"method":"GET","http_version":"1.1","hostname":"localhost","uri":"/api/posts?page=1%27%20OR%20%271%27=%271","headers":{"Host":"localhost:8443","User-A
+gent":"curl/8.13.0","Accept":"*/*"}},"response":{"body":"<html>\r\n<head><title>403 Forbidden</title></head>\r\n<body>\r\n<center><h1>403 
+Forbidden</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n","http_code":403,"headers":{"Server":"nginx","Server":"nginx","Date":"Thu, 08 Oct 2026 03:43:41 
+GMT","Content-Length":"146","Content-Type":"text/html","Access-Control-Allow-Origin":"*","Connection":"keep-alive","Access-Control-Max-Age":"3600","Access-Control-Allow-Methods":"GET, POST, PUT, DELETE, 
+OPTIONS","Access-Control-Allow-Headers":"*"}},"producer":{"modsecurity":"ModSecurity v3.0.17 (Linux)","connector":"ModSecurity-nginx 
+v1.0.4","secrules_engine":"Enabled","components":["OWASP_CRS/4.30.0\""]},"messages":[{"message":"SQL Injection Attack Detected via libinjection","details":{"match":"detected SQLi using 
+libinjection.","reference":"v20,12","ruleId":"942100","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf","lineNumber":"46","data":"Matched Data: s&sos found within ARGS:page: 
+1' OR '1'='1","severity":"2","ver":"OWASP_CRS/4.30.0","rev":"","tags":["application-multi","language-multi","platform-multi","attack-sqli","paranoia-level/1","OWASP_CRS","OWASP_CRS/ATTACK-SQLI","capec/1000/152/2
+48/66"],"maturity":"0","accuracy":"0"}},{"message":"Inbound Anomaly Score Exceeded (Total Score: 5)","details":{"match":"Matched \"Operator `Ge' with parameter `5' against variable 
+`TX:BLOCKING_INBOUND_ANOMALY_SCORE' (Value: `5' )","reference":"","ruleId":"949110","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf","lineNumber":"222","data":"","severity":"0","v
+er":"OWASP_CRS/4.30.0","rev":"","tags":["modsecurity","anomaly-evaluation","OWASP_CRS"],"maturity":"0","accuracy":"0"}}]}}
+waf-1  | 2026/10/08 03:43:41 [error] 612#612: *27 [client 172.18.0.1] ModSecurity: Access denied with code 403 (phase 2). Matched "Operator `Ge' with parameter `5' against variable 
+`TX:BLOCKING_INBOUND_ANOMALY_SCORE' (Value: `20' ) [file "/etc/modsecurity.d/owasp-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf"] [line "222"] [id "949110"] [rev ""] [msg "Inbound Anomaly Score Exceeded 
+(Total Score: 20)"] [data ""] [severity "0"] [ver "OWASP_CRS/4.30.0"] [maturity "0"] [accuracy "0"] [tag "modsecurity"] [tag "anomaly-evaluation"] [tag "OWASP_CRS"] [hostname "localhost"] [uri "/api/posts"] 
+[unique_id "179143102148.440330"] [ref ""], client: 172.18.0.1, server: localhost, request: "GET /api/posts?q=%3Cscript%3Ealert(1)%3C/script%3E HTTP/1.1", host: "localhost:8443"
+waf-1  | {"transaction":{"client_ip":"172.18.0.1","time_stamp":"Thu Oct  8 03:43:41 2026","server_id":"d532849da7390d24d52b93242928d0f89e26e7f5","client_port":41512,"host_ip":"172.18.0.2","host_port":8443,"uniqu
+e_id":"179143102148.440330","is_interrupted":true,"request":{"method":"GET","http_version":"1.1","hostname":"localhost","uri":"/api/posts?q=%3Cscript%3Ealert(1)%3C/script%3E","headers":{"Host":"localhost:8443","
+User-Agent":"curl/8.13.0","Accept":"*/*"}},"response":{"body":"<html>\r\n<head><title>403 Forbidden</title></head>\r\n<body>\r\n<center><h1>403 
+Forbidden</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n","http_code":403,"headers":{"Server":"nginx","Server":"nginx","Date":"Thu, 08 Oct 2026 03:43:41 
+GMT","Content-Length":"146","Content-Type":"text/html","Access-Control-Allow-Origin":"*","Connection":"keep-alive","Access-Control-Max-Age":"3600","Access-Control-Allow-Methods":"GET, POST, PUT, DELETE, 
+OPTIONS","Access-Control-Allow-Headers":"*"}},"producer":{"modsecurity":"ModSecurity v3.0.17 (Linux)","connector":"ModSecurity-nginx 
+v1.0.4","secrules_engine":"Enabled","components":["OWASP_CRS/4.30.0\""]},"messages":[{"message":"XSS Attack Detected via libinjection","details":{"match":"detected XSS using libinjection.","reference":"v17,25t:u
+tf8toUnicode,t:urlDecodeUni,t:htmlEntityDecode,t:jsDecode,t:cssDecode,t:removeNulls","ruleId":"941100","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-941-APPLICATION-ATTACK-XSS.conf","lineNumber":"83","data"
+:"Matched Data: XSS data found within ARGS:q: <script>alert(1)</script>","severity":"2","ver":"OWASP_CRS/4.30.0","rev":"","tags":["modsecurity","application-multi","language-multi","platform-multi","attack-xss",
+"xss-perf-disable","paranoia-level/1","OWASP_CRS","OWASP_CRS/ATTACK-XSS","capec/1000/152/242"],"maturity":"0","accuracy":"0"}},{"message":"XSS Filter - Category 1: Script Tag Vector","details":{"match":"Matched 
+\"Operator `Rx' with parameter `(?i)<script[^>]*>[\\s\\S]*?' against variable `ARGS:q' (Value: `<script>alert(1)</script>' )","reference":"o0,8v17,25t:utf8toUnicode,t:urlDecodeUni,t:htmlEntityDecode,t:jsDecode,t
+:cssDecode,t:removeNulls","ruleId":"941110","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-941-APPLICATION-ATTACK-XSS.conf","lineNumber":"110","data":"Matched Data: <script> found within ARGS:q: <script>aler
+t(1)</script>","severity":"2","ver":"OWASP_CRS/4.30.0","rev":"","tags":["modsecurity","application-multi","language-multi","platform-multi","attack-xss","xss-perf-disable","paranoia-level/1","OWASP_CRS","OWASP_C
+RS/ATTACK-XSS","capec/1000/152/242"],"maturity":"0","accuracy":"0"}},{"message":"NoScript XSS InjectionChecker: HTML Injection","details":{"match":"Matched \"Operator `Rx' with parameter 
+`(?i)<[^0-9<>A-Z_a-z]*(?:[^\\s\\x0b\\\"'<>]*:)?[^0-9<>A-Z_a-z]*[^0-9A-Z_a-z]*?(?:s[^0-9A-Z_a-z]*?(?:c[^0-9A-Z_a-z]*?r[^0-9A-Z_a-z]*?i[^0-9A-Z_a-z]*?p[^0-9A-Z_a-z]*?t|t[^0-9A-Z_a-z]*?y[^0-9A-Z_a-z]*?l[^0-9A 
+(4396 characters omitted)' against variable `ARGS:q' (Value: `<script>alert(1)</script>' )","reference":"o0,7v17,25t:utf8toUnicode,t:urlDecodeUni,t:htmlEntityDecode,t:jsDecode,t:cssDecode,t:removeNulls","ruleId"
+:"941160","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-941-APPLICATION-ATTACK-XSS.conf","lineNumber":"253","data":"Matched Data: <script found within ARGS:q: <script>alert(1)</script>","severity":"2","ver"
+:"OWASP_CRS/4.30.0","rev":"","tags":["modsecurity","application-multi","language-multi","platform-multi","attack-xss","xss-perf-disable","paranoia-level/1","OWASP_CRS","OWASP_CRS/ATTACK-XSS","capec/1000/152/242"
+],"maturity":"0","accuracy":"0"}},{"message":"Javascript method detected","details":{"match":"Matched \"Operator `Rx' with parameter 
+`(?i)\\b(?:eval|set(?:timeout|interval)|new[\\s\\x0b]+Function|a(?:lert|tob)|btoa|(?:promp|impor)t|con(?:firm|sole\\.(?:log|dir))|fetch)[\\s\\x0b]*[\\(\\{]' against variable `ARGS:q' (Value: 
+`<script>alert(1)</script>' 
+)","reference":"o8,6v17,25t:htmlEntityDecode,t:jsDecode","ruleId":"941390","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-941-APPLICATION-ATTACK-XSS.conf","lineNumber":"826","data":"Matched Data: alert( 
+found within ARGS:q: <script>alert(1)</script>","severity":"2","ver":"OWASP_CRS/4.30.0","rev":"","tags":["modsecurity","application-multi","language-multi","platform-nodejs","attack-xss","xss-perf-disable","para
+noia-level/1","OWASP_CRS","OWASP_CRS/ATTACK-XSS","capec/1000/152/242"],"maturity":"0","accuracy":"0"}},{"message":"Inbound Anomaly Score Exceeded (Total Score: 20)","details":{"match":"Matched \"Operator `Ge' 
+with parameter `5' against variable `TX:BLOCKING_INBOUND_ANOMALY_SCORE' (Value: `20' )","reference":"","ruleId":"949110","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf","lineNumb
+er":"222","data":"","severity":"0","ver":"OWASP_CRS/4.30.0","rev":"","tags":["modsecurity","anomaly-evaluation","OWASP_CRS"],"maturity":"0","accuracy":"0"}}]}}
+waf-1  | 2026/10/08 03:43:42 [error] 612#612: *29 [client 172.18.0.1] ModSecurity: Access denied with code 403 (phase 2). Matched "Operator `Ge' with parameter `5' against variable 
+`TX:BLOCKING_INBOUND_ANOMALY_SCORE' (Value: `5' ) [file "/etc/modsecurity.d/owasp-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf"] [line "222"] [id "949110"] [rev ""] [msg "Inbound Anomaly Score Exceeded (Total 
+Score: 5)"] [data ""] [severity "0"] [ver "OWASP_CRS/4.30.0"] [maturity "0"] [accuracy "0"] [tag "modsecurity"] [tag "anomaly-evaluation"] [tag "OWASP_CRS"] [hostname "localhost"] [uri "/"] [unique_id 
+"179143102298.161004"] [ref ""], client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", host: "localhost:8443"
+waf-1  | {"transaction":{"client_ip":"172.18.0.1","time_stamp":"Thu Oct  8 03:43:42 2026","server_id":"d532849da7390d24d52b93242928d0f89e26e7f5","client_port":41536,"host_ip":"172.18.0.2","host_port":8443,"uniqu
+e_id":"179143102298.161004","is_interrupted":true,"request":{"method":"GET","http_version":"1.1","hostname":"localhost","uri":"/","headers":{"Host":"localhost:8443","User-Agent":"sqlmap/1.7","Accept":"*/*"}},"re
+sponse":{"body":"<html>\r\n<head><title>403 Forbidden</title></head>\r\n<body>\r\n<center><h1>403 
+Forbidden</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n","http_code":403,"headers":{"Server":"nginx","Server":"nginx","Date":"Thu, 08 Oct 2026 03:43:42 
+GMT","Content-Length":"146","Content-Type":"text/html","Access-Control-Allow-Origin":"*","Connection":"keep-alive","Access-Control-Max-Age":"3600","Access-Control-Allow-Methods":"GET, POST, PUT, DELETE, 
+OPTIONS","Access-Control-Allow-Headers":"*"}},"producer":{"modsecurity":"ModSecurity v3.0.17 (Linux)","connector":"ModSecurity-nginx 
+v1.0.4","secrules_engine":"Enabled","components":["OWASP_CRS/4.30.0\""]},"messages":[{"message":"Found User-Agent associated with security scanner","details":{"match":"Matched \"Operator `PmFromFile' with 
+parameter `scanners-user-agents.data' against variable `REQUEST_HEADERS:User-Agent' (Value: `sqlmap/1.7' 
+)","reference":"o0,6v48,10","ruleId":"913100","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-913-SCANNER-DETECTION.conf","lineNumber":"38","data":"Matched Data: sqlmap found within 
+REQUEST_HEADERS:User-Agent: sqlmap/1.7","severity":"2","ver":"OWASP_CRS/4.30.0","rev":"","tags":["modsecurity","application-multi","language-multi","platform-multi","attack-reputation-scanner","paranoia-level/1"
+,"OWASP_CRS","OWASP_CRS/SCANNER-DETECTION","capec/1000/118/224/541/310"],"maturity":"0","accuracy":"0"}},{"message":"Inbound Anomaly Score Exceeded (Total Score: 5)","details":{"match":"Matched \"Operator `Ge' 
+with parameter `5' against variable `TX:BLOCKING_INBOUND_ANOMALY_SCORE' (Value: `5' )","reference":"","ruleId":"949110","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf","lineNumbe
+r":"222","data":"","severity":"0","ver":"OWASP_CRS/4.30.0","rev":"","tags":["modsecurity","anomaly-evaluation","OWASP_CRS"],"maturity":"0","accuracy":"0"}}]}}
+waf-1  | 2026/10/08 03:43:42 [error] 612#612: *31 [client 172.18.0.1] ModSecurity: Access denied with code 403 (phase 2). Matched "Operator `Ge' with parameter `5' against variable 
+`TX:BLOCKING_INBOUND_ANOMALY_SCORE' (Value: `10' ) [file "/etc/modsecurity.d/owasp-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf"] [line "222"] [id "949110"] [rev ""] [msg "Inbound Anomaly Score Exceeded 
+(Total Score: 10)"] [data ""] [severity "0"] [ver "OWASP_CRS/4.30.0"] [maturity "0"] [accuracy "0"] [tag "modsecurity"] [tag "anomaly-evaluation"] [tag "OWASP_CRS"] [hostname "localhost"] [uri 
+"/api/auth/login"] [unique_id "179143102237.065844"] [ref ""], client: 172.18.0.1, server: localhost, request: "POST /api/auth/login HTTP/1.1", host: "localhost:8443"
+waf-1  | {"transaction":{"client_ip":"172.18.0.1","time_stamp":"Thu Oct  8 03:43:42 2026","server_id":"d532849da7390d24d52b93242928d0f89e26e7f5","client_port":41544,"host_ip":"172.18.0.2","host_port":8443,"uniqu
+e_id":"179143102237.065844","is_interrupted":true,"request":{"method":"POST","http_version":"1.1","hostname":"localhost","uri":"/api/auth/login","headers":{"Host":"localhost:8443","User-Agent":"curl/8.13.0","Acc
+ept":"*/*","Content-Type":"application/json","Content-Length":"46"}},"response":{"body":"<html>\r\n<head><title>403 Forbidden</title></head>\r\n<body>\r\n<center><h1>403 
+Forbidden</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n","http_code":403,"headers":{"Server":"nginx","Server":"nginx","Date":"Thu, 08 Oct 2026 03:43:42 
+GMT","Content-Length":"146","Content-Type":"text/html","Access-Control-Allow-Origin":"*","Connection":"keep-alive","Access-Control-Max-Age":"3600","Access-Control-Allow-Methods":"GET, POST, PUT, DELETE, 
+OPTIONS","Access-Control-Allow-Headers":"*"}},"producer":{"modsecurity":"ModSecurity v3.0.17 (Linux)","connector":"ModSecurity-nginx 
+v1.0.4","secrules_engine":"Enabled","components":["OWASP_CRS/4.30.0\""]},"messages":[{"message":"Finds basic MongoDB SQL injection attempts","details":{"match":"Matched \"Operator `Rx' with parameter 
+`(?i)\\[?\\$(?:a(?:bs|c(?:cumulator|osh?)|dd(?:ToSet)?|ll(?:ElementsTrue)?|n(?:d|yElementTrue)|rray(?:ElemA|ToObjec)t|sinh?|tan[2h]?|vg)|b(?:etween|i(?:narySize|t(?:And|Not|(?:O|Xo)r)?)|ottomN?|sonSize|u (1314 
+characters omitted)' against variable `ARGS_NAMES:json.password.$ne' (Value: `json.password.$ne' 
+)","reference":"o11,3v0,14t:urlDecodeUnio14,3v0,17t:urlDecodeUni","ruleId":"942290","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf","lineNumber":"386","data":"Matched Data: 
+$ne found within ARGS_NAMES:json.password.$ne: json.password.$ne","severity":"2","ver":"OWASP_CRS/4.30.0","rev":"","tags":["modsecurity","application-multi","language-multi","platform-multi","attack-sqli","paran
+oia-level/1","OWASP_CRS","OWASP_CRS/ATTACK-SQLI","capec/1000/152/248/66"],"maturity":"0","accuracy":"0"}},{"message":"Inbound Anomaly Score Exceeded (Total Score: 10)","details":{"match":"Matched \"Operator 
+`Ge' with parameter `5' against variable `TX:BLOCKING_INBOUND_ANOMALY_SCORE' (Value: `10' )","reference":"","ruleId":"949110","file":"/etc/modsecurity.d/owasp-crs/rules/REQUEST-949-BLOCKING-EVALUATION.conf","lin
+eNumber":"222","data":"","severity":"0","ver":"OWASP_CRS/4.30.0","rev":"","tags":["modsecurity","anomaly-evaluation","OWASP_CRS"],"maturity":"0","accuracy":"0"}}]}}
+
+

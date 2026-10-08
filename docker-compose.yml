@@ -37,9 +37,9 @@ services:
       MONGO_URI: mongodb://cms_app:${MONGO_APP_PASSWORD}@mongo:27017/cms?authSource=cms
       JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en .env}
       MFA_ENC_KEY: ${MFA_ENC_KEY:?Falta MFA_ENC_KEY en .env}
-      CLIENT_ORIGIN: http://localhost:8080
-      TRUST_PROXY: "1"
-      COOKIE_SECURE: "false"
+      CLIENT_ORIGIN: https://localhost:8443
+      TRUST_PROXY: "2"
+      COOKIE_SECURE: "true"
     depends_on:
       mongo:
         condition: service_healthy
@@ -75,11 +75,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    ports:
-      - "127.0.0.1:8080:8080"
     networks:
       - backend
-      - edge
     read_only: true
     tmpfs:
       - /tmp
@@ -94,6 +91,34 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+
+  waf:
+    image: owasp/modsecurity-crs:nginx-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      BACKEND: http://web:8080
+      SERVER_NAME: localhost
+      PORT: "8080"
+      SSL_PORT: "8443"
+      MODSEC_RULE_ENGINE: "On"
+      BLOCKING_PARANOIA: "1"
+      ANOMALY_INBOUND: "5"
+      ANOMALY_OUTBOUND: "4"
+      ALLOWED_METHODS: "GET HEAD POST PUT PATCH DELETE OPTIONS"
+    ports:
+      - "127.0.0.1:8443:8443"
+    networks:
+      - backend
+      - edge
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 200
 
 networks:
   backend:

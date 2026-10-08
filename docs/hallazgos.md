@@ -16,14 +16,14 @@ Controles aplicados:
 - El `.env` está fuera del repositorio y el servidor no arranca si faltan variables o si `JWT_SECRET` tiene menos de 32 caracteres.
 - `npm audit` inicial: 0 vulnerabilidades.
 
-Fase 2
+## Fase 2
 
 El 409 al registrar un correo existente permite enumerar usuarios.
 La protección CSRF depende solo de SameSite=Strict y de CORS restringido, sin token CSRF.
 Los tokens duran 30 minutos y no se pueden revocar antes.
 El límite de intentos es por IP y vive en memoria, así que se reinicia con el servidor.
 
-Fase 3
+## Fase 3
 
 El contenido se guarda como Markdown crudo, y mostrarlo sin sanitizar daría XSS almacenado (se mitiga en la Fase 4).
 El 403 en un post ajeno confirma que el ID existe (riesgo bajo, los ID no son secuenciales).
@@ -131,3 +131,23 @@ Riesgos residuales:
 - Las imágenes usan etiquetas flotantes (`mongo:8`, `stable-alpine`). En producción se fijarían por digest.
 - Sin TLS todavía y con cookie `Secure` desactivada (HTTP en local). Se resuelve en la 8B.
 - El volumen de `uploads` no está cifrado y las imágenes base pueden traer CVEs (se escanean con Trivy en la etapa 10).
+
+## Fase 8B: WAF, TLS y cabeceras
+
+Controles aplicados:
+
+- WAF ModSecurity con las reglas OWASP CRS 4 como única puerta de entrada (127.0.0.1:8443), en modo bloqueo con paranoia 1 y umbral de anomalía 5. Verificado: SQLi, XSS, path traversal, escáner (sqlmap) y método TRACE devuelven 403.
+- TLS en el borde (certificado autofirmado generado al primer arranque). La cookie de sesión ahora es HttpOnly, Secure y SameSite Strict (cierra el hallazgo de la Fase 4).
+- CSP estricta, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP y HSTS para el frontend, configuradas en Nginx.
+- Cadena de proxies confiable: la API usa `trust proxy` con 2 saltos, así que el límite de intentos y la auditoría ven la IP real del cliente.
+- Métodos HTTP permitidos acotados (GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS). Defensa en profundidad: la inyección NoSQL en el login la detiene el WAF o la validación Zod de la API.
+- Escaneo de imágenes con Trivy y de Dockerfiles con Checkov (resultados en `docs/evidencias`).
+
+Riesgos residuales:
+
+- Falso positivo: el WAF bloquea contenido legítimo que incluya HTML ejecutable (por ejemplo, un post que explique `<script>`). Tratamiento: aceptar el riesgo o excluir reglas solo para el campo de contenido.
+- Los ataques bloqueados por el WAF no llegan a la auditoría de la aplicación. Su registro está solo en los logs del WAF, y un SIEM debe correlacionar ambos.
+- El contenedor del WAF no puede correr con sistema de archivos de solo lectura (esas variantes no se publican). Se compensa con usuario sin privilegios, `cap_drop: ALL`, `no-new-privileges` y límites de recursos.
+- La imagen del WAF usa una etiqueta flotante (`nginx-alpine`). En producción se fijaría por versión o digest.
+- El certificado es autofirmado: el navegador avisa y no hay validación de identidad. En producción se usaría una CA real (por ejemplo, Let's Encrypt).
+- No hay límite de peticiones en el borde (solo los límites de la API). Un `limit_req` en el WAF reforzaría la defensa contra fuerza bruta y denegación de servicio.
