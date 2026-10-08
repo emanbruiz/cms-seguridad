@@ -9,6 +9,8 @@ RUN npm ci --omit=dev
 FROM node:24-bookworm-slim
 ENV NODE_ENV=production
 WORKDIR /app
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg /opt/yarn*
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src

@@ -151,3 +151,17 @@ Riesgos residuales:
 - La imagen del WAF usa una etiqueta flotante (`nginx-alpine`). En producción se fijaría por versión o digest.
 - El certificado es autofirmado: el navegador avisa y no hay validación de identidad. En producción se usaría una CA real (por ejemplo, Let's Encrypt).
 - No hay límite de peticiones en el borde (solo los límites de la API). Un `limit_req` en el WAF reforzaría la defensa contra fuerza bruta y denegación de servicio.
+
+Resultados de escaneo (Trivy con `--ignore-unfixed`, solo HIGH y CRITICAL; Checkov sobre los Dockerfiles):
+
+- `cms-web` y WAF (`owasp/modsecurity-crs`): 0 hallazgos.
+- `cms-api` antes: 3 CRITICAL y 11 HIGH. Venían de `perl-base` de Debian (con corrección publicada) y de las dependencias del npm incluido en la imagen oficial de Node. Tratamiento (mitigar): `apt-get upgrade` en la imagen final y eliminación de npm, npx y corepack, que el runtime no necesita. Después: 0 hallazgos (`trivy-api-antes.txt` y `trivy-api-despues.txt`).
+- `mongo:8`: 1 CRITICAL y 24 HIGH, en `gosu` (librería estándar de Go) y en componentes Node.js internos de la imagen oficial. Tratamiento (aceptar): MongoDB no publica puertos, vive en una red interna sin salida y `gosu` solo corre al arrancar para bajar privilegios. Se re-escanea al actualizar la imagen.
+- Checkov: 108 pruebas pasadas y 0 fallidas en los dos Dockerfiles.
+
+Observaciones:
+
+- Docker Desktop entrega todas las peticiones con la IP de la puerta de enlace (172.18.0.1), así que el límite de intentos y la auditoría no distinguen clientes en el entorno local. En producción lo resuelve el balanceador con `X-Forwarded-For`.
+- La imagen del WAF agrega cabeceras CORS permisivas por defecto (`Access-Control-Allow-Origin: *` en sus respuestas de bloqueo y `Access-Control-Allow-Headers: *` en la página). Pendiente de tratar en la etapa de pruebas de penetración.
+- Path traversal: Nginx rechaza la URL con `400` antes de que intervenga el WAF.
+- Los reportes de Trivy generados con Tee-Object quedaron en UTF-16, y se regeneraron en UTF-8.
