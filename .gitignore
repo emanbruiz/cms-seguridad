@@ -149,3 +149,9 @@ vite.config.ts.timestamp-*
 .turbo
 
 uploads/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
