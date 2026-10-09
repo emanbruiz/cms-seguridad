@@ -165,3 +165,5 @@ Observaciones:
 - La imagen del WAF agrega cabeceras CORS permisivas por defecto (`Access-Control-Allow-Origin: *` en sus respuestas de bloqueo y `Access-Control-Allow-Headers: *` en la página). Pendiente de tratar en la etapa de pruebas de penetración.
 - Path traversal: Nginx rechaza la URL con `400` antes de que intervenga el WAF.
 - Los reportes de Trivy generados con Tee-Object quedaron en UTF-16, y se regeneraron en UTF-8.
+
+- Verificación posterior: el reporte `trivy-api-despues.txt` muestra 0 vulnerabilidades HIGH y CRITICAL en Debian y en todos los paquetes de Node, y `npm` ya no existe en la imagen final de la API.
