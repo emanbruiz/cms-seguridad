@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24-bookworm-slim AS deps
+FROM node:25-bookworm-slim AS deps
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-FROM node:24-bookworm-slim
+FROM node:25-bookworm-slim
 ENV NODE_ENV=production
 WORKDIR /app
 RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/* \
