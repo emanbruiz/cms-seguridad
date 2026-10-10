@@ -87,6 +87,50 @@ resource "aws_wafv2_web_acl" "main" {
   }
 
   rule {
+    name     = "AWSManagedRulesCommonRuleSet"
+    priority = 10
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesCommonRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesSQLiRuleSet"
+    priority = 20
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesSQLiRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesSQLiRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
     name     = "AWSManagedRulesKnownBadInputsRuleSet"
     priority = 30
 
@@ -108,29 +152,25 @@ resource "aws_wafv2_web_acl" "main" {
     }
   }
 
-  dynamic "rule" {
-    for_each = local.managed_rule_groups
+  rule {
+    name     = "AWSManagedRulesAmazonIpReputationList"
+    priority = 40
 
-    content {
-      name     = rule.key
-      priority = rule.value
+    override_action {
+      none {}
+    }
 
-      override_action {
-        none {}
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesAmazonIpReputationList"
+        vendor_name = "AWS"
       }
+    }
 
-      statement {
-        managed_rule_group_statement {
-          name        = rule.key
-          vendor_name = "AWS"
-        }
-      }
-
-      visibility_config {
-        cloudwatch_metrics_enabled = true
-        metric_name                = rule.key
-        sampled_requests_enabled   = true
-      }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesAmazonIpReputationList"
+      sampled_requests_enabled   = true
     }
   }
 

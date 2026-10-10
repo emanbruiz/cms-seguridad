@@ -184,3 +184,4 @@ Riesgos residuales:
 - Una única NAT Gateway es un punto único de falla. Con dos zonas se usaría una por zona.
 - El diseño exige adaptar la aplicación (subida de imágenes a S3, TLS con el bundle de CA de DocumentDB, `retryWrites=false` y el destino de Nginx). Está listado en `docs/arquitectura.md`.
 - El secreto de la base de datos pasa por el estado de Terraform. En producción se usaría un backend remoto cifrado con acceso restringido.
+- Segundo escaneo (`checkov-terraform-2.txt`): 248 pruebas pasadas, 1 fallida y 7 omitidas con justificación. Quedaba `CKV2_AWS_76` (protección contra Log4j en el WAF) porque el escáner no interpreta las reglas definidas con un bloque dinámico. Se reescribieron las reglas administradas como bloques fijos y el tercer escaneo (`checkov-terraform-3.txt`) lo confirma.

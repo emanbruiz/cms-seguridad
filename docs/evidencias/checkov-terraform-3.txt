@@ -1,0 +1,8 @@
+﻿terraform scan results:
+
+Passed checks: 248, Failed checks: 1, Skipped checks: 7
+
+Check: CKV2_AWS_76: "Ensure AWS ALB attached WAFv2 WebACL is configured with AMR for Log4j Vulnerability"
+	FAILED for resource: aws_lb.main
+	File: /compute.tf:17-31
+
