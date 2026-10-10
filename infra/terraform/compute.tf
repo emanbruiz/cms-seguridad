@@ -2,7 +2,6 @@ locals {
   managed_rule_groups = {
     "AWSManagedRulesCommonRuleSet"          = 10
     "AWSManagedRulesSQLiRuleSet"            = 20
-    "AWSManagedRulesKnownBadInputsRuleSet"  = 30
     "AWSManagedRulesAmazonIpReputationList" = 40
   }
 
@@ -83,6 +82,28 @@ resource "aws_wafv2_web_acl" "main" {
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "limite-de-tasa"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesKnownBadInputsRuleSet"
+    priority = 30
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesKnownBadInputsRuleSet"
       sampled_requests_enabled   = true
     }
   }

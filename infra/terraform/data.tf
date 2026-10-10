@@ -1,11 +1,25 @@
 data "aws_elb_service_account" "main" {}
 
 resource "aws_s3_bucket" "uploads" {
+  #checkov:skip=CKV_AWS_144:La replicacion entre regiones queda fuera del alcance. El bucket tiene versionado y retencion de versiones
   bucket_prefix = "${var.name}-uploads-"
 }
 
+
 resource "aws_s3_bucket" "logs" {
+  #checkov:skip=CKV_AWS_144:La replicacion entre regiones queda fuera del alcance. El bucket tiene versionado y retencion
+  #checkov:skip=CKV_AWS_145:Los logs de acceso del balanceador solo admiten cifrado SSE-S3 (AES256) y no SSE-KMS
   bucket_prefix = "${var.name}-logs-"
+}
+
+resource "aws_s3_bucket_notification" "uploads" {
+  bucket      = aws_s3_bucket.uploads.id
+  eventbridge = true
+}
+
+resource "aws_s3_bucket_notification" "logs" {
+  bucket      = aws_s3_bucket.logs.id
+  eventbridge = true
 }
 
 resource "aws_s3_bucket_public_access_block" "uploads" {
@@ -240,6 +254,7 @@ resource "aws_docdb_cluster_instance" "main" {
 }
 
 resource "aws_secretsmanager_secret" "app" {
+  #checkov:skip=CKV2_AWS_57:La rotacion automatica exige una funcion Lambda. Los secretos se rotan con un nuevo despliegue
   name_prefix             = "${var.name}/app-"
   kms_key_id              = aws_kms_key.main.arn
   recovery_window_in_days = 30

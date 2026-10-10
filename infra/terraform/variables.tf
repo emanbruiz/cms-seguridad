@@ -27,3 +27,9 @@ variable "web_image" {
   type        = string
   description = "Imagen del frontend en ECR"
 }
+
+variable "azs" {
+  type        = list(string)
+  description = "Zonas de disponibilidad fijas para que el plan no cambie si AWS agrega una"
+  default     = ["us-east-1a", "us-east-1b"]
+}

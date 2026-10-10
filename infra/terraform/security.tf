@@ -1,6 +1,9 @@
 data "aws_caller_identity" "current" {}
 
 data "aws_iam_policy_document" "kms" {
+  #checkov:skip=CKV_AWS_109:La politica de una clave KMS debe dar kms:* a la cuenta para no perder el acceso a la clave
+  #checkov:skip=CKV_AWS_111:En una politica de clave KMS el recurso asterisco se refiere a la propia clave
+  #checkov:skip=CKV_AWS_356:En una politica de clave KMS el recurso asterisco se refiere a la propia clave
   statement {
     sid       = "AdministracionDeLaCuenta"
     actions   = ["kms:*"]

@@ -167,3 +167,20 @@ Observaciones:
 - Los reportes de Trivy generados con Tee-Object quedaron en UTF-16, y se regeneraron en UTF-8.
 
 - Verificación posterior: el reporte `trivy-api-despues.txt` muestra 0 vulnerabilidades HIGH y CRITICAL en Debian y en todos los paquetes de Node, y `npm` ya no existe en la imagen final de la API.
+
+## Etapa 9: infraestructura como código (Terraform en AWS)
+
+Diseño: ALB con AWS WAF (reglas administradas y límite de tasa), ECS Fargate en subredes privadas, DocumentDB en subredes de datos sin ruta a internet, S3 privado cifrado con KMS, Secrets Manager y logs en CloudWatch cifrados con KMS. Se escribe y se escanea; no se despliega. La configuración valida con `terraform validate`.
+
+Primer escaneo con Checkov: 245 pruebas pasadas y 12 fallidas (`checkov-terraform-1.txt`). Tratamiento:
+
+- Mitigar (5): protección contra Log4j (la regla estaba en un bloque dinámico que el escáner no interpreta y se escribió como regla fija, 2 hallazgos), zonas de disponibilidad fijadas en una variable (1) y notificaciones de eventos en los dos buckets de S3 (2).
+- Aceptar (7): permisos amplios en la política de la clave KMS, porque la clave exige `kms:*` a la cuenta y el asterisco se refiere a la propia clave (3); rotación automática de secretos, que exige una función Lambda (1); cifrado SSE-S3 en el bucket de logs, porque los logs del balanceador no admiten KMS (1); replicación entre regiones, fuera del alcance (2). Cada aceptación queda escrita en el código con `#checkov:skip` y su justificación.
+- Segundo escaneo: `checkov-terraform-2.txt`.
+
+Riesgos residuales:
+
+- El tráfico entre el balanceador y la aplicación va por HTTP dentro de la VPC (el TLS termina en el balanceador).
+- Una única NAT Gateway es un punto único de falla. Con dos zonas se usaría una por zona.
+- El diseño exige adaptar la aplicación (subida de imágenes a S3, TLS con el bundle de CA de DocumentDB, `retryWrites=false` y el destino de Nginx). Está listado en `docs/arquitectura.md`.
+- El secreto de la base de datos pasa por el estado de Terraform. En producción se usaría un backend remoto cifrado con acceso restringido.
