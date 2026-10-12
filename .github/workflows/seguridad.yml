@@ -16,7 +16,7 @@ concurrency:
 jobs:
   secretos:
     name: Secretos (Gitleaks)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -39,7 +39,7 @@ jobs:
 
   sast:
     name: SAST (Semgrep)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: semgrep/semgrep
     steps:
@@ -57,7 +57,7 @@ jobs:
 
   sca:
     name: SCA (npm audit)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -88,7 +88,7 @@ jobs:
 
   contenedores:
     name: Contenedores (Trivy)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -117,7 +117,7 @@ jobs:
 
   iac:
     name: IaC (Checkov)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
