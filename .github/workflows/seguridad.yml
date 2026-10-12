@@ -1,0 +1,138 @@
+name: Seguridad
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seguridad-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secretos:
+    name: Secretos (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Buscar secretos en todo el historial
+        shell: bash
+        run: |
+          mkdir -p reportes
+          docker run --rm \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
+            -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest \
+            git /repo --redact --report-format json --report-path /repo/reportes/gitleaks.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: reporte-gitleaks
+          path: reportes/
+          if-no-files-found: ignore
+
+  sast:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Analizar el codigo
+        run: semgrep scan --config p/javascript --config p/nodejs --config p/owasp-top-ten --json-output=semgrep.json server/src client/src
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: reporte-semgrep
+          path: semgrep.json
+          if-no-files-found: ignore
+
+  sca:
+    name: SCA (npm audit)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        proyecto: [server, client]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Instalar dependencias
+        working-directory: ${{ matrix.proyecto }}
+        run: npm ci
+      - name: Auditar dependencias
+        working-directory: ${{ matrix.proyecto }}
+        shell: bash
+        run: |
+          mkdir -p ../reportes
+          npm audit --json > ../reportes/npm-audit-${{ matrix.proyecto }}.json || true
+          npm audit --audit-level=high
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: reporte-sca-${{ matrix.proyecto }}
+          path: reportes/
+          if-no-files-found: ignore
+
+  contenedores:
+    name: Contenedores (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Construir las imagenes
+        run: |
+          docker build -t cms-api ./server
+          docker build -t cms-web ./client
+      - name: Escanear con Trivy
+        shell: bash
+        run: |
+          mkdir -p reportes
+          trivy() { docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache aquasec/trivy:latest "$@"; }
+          status=0
+          trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 cms-api | tee reportes/trivy-api.txt || status=1
+          trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 cms-web | tee reportes/trivy-web.txt || status=1
+          trivy image --severity HIGH,CRITICAL --ignore-unfixed owasp/modsecurity-crs:nginx-alpine | tee reportes/trivy-waf.txt
+          trivy image --severity HIGH,CRITICAL --ignore-unfixed mongo:8 | tee reportes/trivy-mongo.txt
+          exit $status
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: reporte-trivy
+          path: reportes/
+          if-no-files-found: ignore
+
+  iac:
+    name: IaC (Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Escanear Terraform y Dockerfiles
+        shell: bash
+        run: |
+          mkdir -p reportes
+          status=0
+          docker run --rm -v "$PWD:/src" bridgecrew/checkov -d /src/infra/terraform --compact --quiet | tee reportes/checkov-terraform.txt || status=1
+          docker run --rm -v "$PWD:/src" bridgecrew/checkov -f /src/server/Dockerfile -f /src/client/Dockerfile --compact --quiet | tee reportes/checkov-dockerfiles.txt || status=1
+          exit $status
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: reporte-checkov
+          path: reportes/
+          if-no-files-found: ignore

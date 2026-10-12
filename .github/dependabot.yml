@@ -5,24 +5,40 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+
   - package-ecosystem: npm
     directory: /client
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+
+  # Node se mantiene en la linea LTS (24). Las versiones mayores se evaluan a mano.
   - package-ecosystem: docker
     directory: /server
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: docker
     directory: /client
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+
+  # El proveedor de AWS se mantiene en la serie 5. El salto a la 6 se prueba aparte con validate y Checkov.
   - package-ecosystem: terraform
     directory: /infra/terraform
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: hashicorp/aws
+        update-types: ["version-update:semver-major"]
