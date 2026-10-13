@@ -47,6 +47,8 @@ router.get('/:filename', (req, res) => {
     'Content-Security-Policy': "default-src 'none'; sandbox",
     'Cache-Control': 'public, max-age=31536000, immutable',
   });
+  // Justificacion: filename pasa por FILE_RE (UUID con extension permitida) y la carpeta raiz es fija.
+  // nosemgrep: javascript.express.security.audit.express-res-sendfile.express-res-sendfile
   res.sendFile(filename, { root: UPLOAD_DIR, dotfiles: 'deny' }, (err) => {
     if (err && !res.headersSent) {
       res.status(404).json({ error: 'Archivo no encontrado' });

@@ -47,7 +47,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Analizar el codigo
-        run: semgrep scan --config p/javascript --config p/nodejs --config p/owasp-top-ten --json-output=semgrep.json server/src client/src
+        run: semgrep scan --error --config p/javascript --config p/nodejs --config p/owasp-top-ten --json-output=semgrep.json server/src client/src
       - uses: actions/upload-artifact@v7
         if: always()
         with:
