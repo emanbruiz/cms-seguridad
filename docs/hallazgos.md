@@ -186,3 +186,54 @@ Riesgos residuales:
 - El secreto de la base de datos pasa por el estado de Terraform. En producción se usaría un backend remoto cifrado con acceso restringido.
 - Segundo escaneo (`checkov-terraform-2.txt`): 248 pruebas pasadas, 1 fallida y 7 omitidas con justificación. Tercer escaneo (`checkov-terraform-3.txt`, reglas del WAF reescritas como bloques fijos): el mismo hallazgo, `CKV2_AWS_76` sobre el balanceador. Causa real: la guía de AWS contra Log4j (boletín AWS-2021-006) pide, además de `KnownBadInputs`, el grupo `AnonymousIpList`. Tratamiento (mitigar): se agregó el grupo y el cuarto escaneo (`checkov-terraform-4.txt`) da 0 fallidas.
 - Riesgo residual: `AnonymousIpList` bloquea VPN, proxies, Tor y proveedores de hosting, así que puede rechazar usuarios legítimos. Se vigila con las métricas del WAF y, si hace falta, se pasa a modo de conteo con `rule_action_override`.
+
+## Etapa 10: CI/CD DevSecOps (GitHub Actions)
+
+El flujo `.github/workflows/seguridad.yml` corre en cada subida a `main`, en cada pull request y a pedido, con permisos de solo lectura y sin guardar credenciales de Git. Cinco trabajos en paralelo:
+
+- Gitleaks (secretos en todo el historial), Semgrep (SAST con reglas de JavaScript, Node.js y OWASP Top 10), `npm audit` de la API y del frontend (SCA), Trivy (imágenes de contenedor) y Checkov (Terraform y Dockerfiles).
+- Bloquean: Gitleaks, `npm audit` (HIGH o superior), Trivy sobre las imágenes propias (HIGH o CRITICAL con corrección) y Checkov. Semgrep no bloquea todavía: primero se revisan los hallazgos. Los reportes se guardan como artefactos de cada corrida.
+- Dependabot propone actualizaciones semanales de npm, Docker, GitHub Actions y Terraform, e ignora los saltos de versión mayor de Node y del proveedor de AWS, que se prueban a mano.
+
+Primera corrida real: Gitleaks, Semgrep, SCA y Checkov en verde. Trivy bloqueó la imagen web por una vulnerabilidad nueva (`CVE-2026-4775`, HIGH, en `libtiff` de la imagen base de Nginx, publicada después de nuestro escaneo manual del 8 de octubre). Tratamiento (mitigar): `apk upgrade` en la imagen final. La corrida siguiente quedó en verde.
+
+Aceptados con justificación (imágenes de terceros, informativos en el flujo):
+
+- `owasp/modsecurity-crs:nginx-alpine`: la misma `libtiff`. Se corrige cuando el proyecto publique una imagen nueva.
+- `mongo:8`: 60 hallazgos HIGH o CRITICAL (59 y 1) en `gosu`, en las herramientas de Go de la imagen (`mongodump`, `mongoexport` y similares) y en `js-yaml`. MongoDB no publica puertos, vive en una red interna sin salida y esas herramientas no se ejecutan en producción. Se re-escanea en cada corrida.
+
+Riesgos residuales:
+
+- Las acciones de GitHub están fijadas por versión mayor y no por hash de commit, y las imágenes de Gitleaks, Trivy y Checkov usan `latest`. Una versión comprometida entraría al flujo sin revisión. En producción se fijarían por hash.
+- Sin reglas de protección de rama no hay nada que obligue a que los trabajos pasen antes de integrar un cambio (en repositorios privados de plan gratuito no se pueden exigir).
+- Semgrep sigue en modo informativo, y el panel de Code Scanning de GitHub no está disponible en repositorios privados sin plan de pago.
+- El runner se fijó en `ubuntu-24.04` para que el cambio de `ubuntu-latest` a Ubuntu 26 (19 de octubre de 2026) no altere el flujo sin aviso.
+
+## Etapa 10: CI/CD DevSecOps (GitHub Actions)
+
+El flujo `.github/workflows/seguridad.yml` corre en cada subida a `main`, en cada pull request y a pedido, en un runner fijado (`ubuntu-24.04`), con permisos de solo lectura y sin guardar credenciales de Git. Cinco trabajos en paralelo, todos bloqueantes:
+
+- Gitleaks: secretos en todo el historial (32 commits revisados, sin fugas).
+- Semgrep (SAST): 74 reglas de JavaScript, Node.js y OWASP Top 10 sobre 42 archivos.
+- `npm audit` de la API y del frontend (SCA): HIGH o superior.
+- Trivy: imágenes propias (HIGH o CRITICAL con corrección). Las imágenes de terceros (WAF y MongoDB) se registran sin bloquear.
+- Checkov: Terraform y Dockerfiles.
+  Los reportes se guardan como artefactos de cada corrida. Dependabot propone actualizaciones semanales de npm, Docker, GitHub Actions y Terraform, e ignora los saltos de versión mayor de Node y del proveedor de AWS.
+
+Resultados de la primera corrida y su tratamiento:
+
+- Trivy bloqueó la imagen web por una vulnerabilidad nueva (`CVE-2026-4775`, HIGH, en `libtiff` de la imagen base de Nginx), publicada después de nuestro escaneo manual del 8 de octubre. Mitigar: `apk upgrade` en la imagen final. La corrida siguiente quedó en verde.
+- Semgrep encontró 2 hallazgos. (1) AES-GCM sin longitud de tag de autenticación en `utils/crypto.js`: mitigar, se fijó en 16 bytes al cifrar y al descifrar y se valida el formato; compatible con los secretos ya guardados. (2) `res.sendFile` con dato del usuario en `routes/media.js`: aceptar como falso positivo, porque el nombre pasa por una expresión regular de UUID con extensión permitida, la carpeta raíz es fija y la prueba de path traversal de la Fase 6 devolvió 404; la justificación está en el código con `nosemgrep`. Con eso Semgrep pasó a bloquear.
+- Gitleaks, `npm audit` y Checkov en verde desde la primera corrida.
+
+Aceptados con justificación (imágenes de terceros, informativos en el flujo):
+
+- `owasp/modsecurity-crs:nginx-alpine`: la misma `libtiff`. Se corrige cuando el proyecto publique una imagen nueva.
+- `mongo:8`: 60 hallazgos (59 HIGH y 1 CRITICAL) en `gosu`, en las herramientas de Go de la imagen (`mongodump`, `mongoexport` y similares) y en `js-yaml`. MongoDB no publica puertos, vive en una red interna sin salida y esas herramientas no se ejecutan en producción.
+
+Riesgos residuales:
+
+- Las acciones de GitHub están fijadas por versión mayor y no por hash de commit, y las imágenes de Gitleaks, Trivy y Checkov usan `latest`. Una versión comprometida entraría al flujo sin revisión. En producción se fijarían por hash.
+- Sin reglas de protección de rama (no exigibles en repositorios privados de plan gratuito), nada obliga a que los trabajos pasen antes de integrar un cambio. El panel de Code Scanning tampoco está disponible sin plan de pago.
+- Una excepción `nosemgrep` oculta el hallazgo para siempre. Cada una debe revisarse si cambia el código que la rodea.
+- El runner fijado exige revisar la migración de Ubuntu 24.04 a 26 (anunciada para el 19 de octubre de 2026).
