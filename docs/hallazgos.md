@@ -189,28 +189,6 @@ Riesgos residuales:
 
 ## Etapa 10: CI/CD DevSecOps (GitHub Actions)
 
-El flujo `.github/workflows/seguridad.yml` corre en cada subida a `main`, en cada pull request y a pedido, con permisos de solo lectura y sin guardar credenciales de Git. Cinco trabajos en paralelo:
-
-- Gitleaks (secretos en todo el historial), Semgrep (SAST con reglas de JavaScript, Node.js y OWASP Top 10), `npm audit` de la API y del frontend (SCA), Trivy (imágenes de contenedor) y Checkov (Terraform y Dockerfiles).
-- Bloquean: Gitleaks, `npm audit` (HIGH o superior), Trivy sobre las imágenes propias (HIGH o CRITICAL con corrección) y Checkov. Semgrep no bloquea todavía: primero se revisan los hallazgos. Los reportes se guardan como artefactos de cada corrida.
-- Dependabot propone actualizaciones semanales de npm, Docker, GitHub Actions y Terraform, e ignora los saltos de versión mayor de Node y del proveedor de AWS, que se prueban a mano.
-
-Primera corrida real: Gitleaks, Semgrep, SCA y Checkov en verde. Trivy bloqueó la imagen web por una vulnerabilidad nueva (`CVE-2026-4775`, HIGH, en `libtiff` de la imagen base de Nginx, publicada después de nuestro escaneo manual del 8 de octubre). Tratamiento (mitigar): `apk upgrade` en la imagen final. La corrida siguiente quedó en verde.
-
-Aceptados con justificación (imágenes de terceros, informativos en el flujo):
-
-- `owasp/modsecurity-crs:nginx-alpine`: la misma `libtiff`. Se corrige cuando el proyecto publique una imagen nueva.
-- `mongo:8`: 60 hallazgos HIGH o CRITICAL (59 y 1) en `gosu`, en las herramientas de Go de la imagen (`mongodump`, `mongoexport` y similares) y en `js-yaml`. MongoDB no publica puertos, vive en una red interna sin salida y esas herramientas no se ejecutan en producción. Se re-escanea en cada corrida.
-
-Riesgos residuales:
-
-- Las acciones de GitHub están fijadas por versión mayor y no por hash de commit, y las imágenes de Gitleaks, Trivy y Checkov usan `latest`. Una versión comprometida entraría al flujo sin revisión. En producción se fijarían por hash.
-- Sin reglas de protección de rama no hay nada que obligue a que los trabajos pasen antes de integrar un cambio (en repositorios privados de plan gratuito no se pueden exigir).
-- Semgrep sigue en modo informativo, y el panel de Code Scanning de GitHub no está disponible en repositorios privados sin plan de pago.
-- El runner se fijó en `ubuntu-24.04` para que el cambio de `ubuntu-latest` a Ubuntu 26 (19 de octubre de 2026) no altere el flujo sin aviso.
-
-## Etapa 10: CI/CD DevSecOps (GitHub Actions)
-
 El flujo `.github/workflows/seguridad.yml` corre en cada subida a `main`, en cada pull request y a pedido, en un runner fijado (`ubuntu-24.04`), con permisos de solo lectura y sin guardar credenciales de Git. Cinco trabajos en paralelo, todos bloqueantes:
 
 - Gitleaks: secretos en todo el historial (32 commits revisados, sin fugas).
