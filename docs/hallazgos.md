@@ -215,3 +215,12 @@ Riesgos residuales:
 - Sin reglas de protección de rama (no exigibles en repositorios privados de plan gratuito), nada obliga a que los trabajos pasen antes de integrar un cambio. El panel de Code Scanning tampoco está disponible sin plan de pago.
 - Una excepción `nosemgrep` oculta el hallazgo para siempre. Cada una debe revisarse si cambia el código que la rodea.
 - El runner fijado exige revisar la migración de Ubuntu 24.04 a 26 (anunciada para el 19 de octubre de 2026).
+
+## Etapa 12: pruebas de penetración
+
+Alcance: https://localhost:8443 (sistema propio, entorno local). Versión evaluada: v1.0-evaluada; versión corregida: v1.1-remediada. Detalle en `docs/pentest.md`.
+
+- Caja negra: Nmap (solo el 8443 expuesto), ZAP baseline (0 FAIL, 4 WARN), sondeos manuales y 9 de 9 ataques de prueba bloqueados por el WAF.
+- Caja gris y abuso: 41 pruebas automatizadas (`pentest/caja-gris.ps1`). En v1.0, 38 en OK y 3 hallazgos: contraseñas comunes aceptadas, token vigente después de cerrar sesión y ausencia de límite global de peticiones.
+- Corrección en v1.1: lista de contraseñas comunes, versión de token por usuario revocada al cerrar sesión, límite general de 120 peticiones por minuto, TLS 1.3 exclusivo, CORS acotado y cabeceras COOP, COEP y CORP. Resultado: 41 de 41 en OK.
+- El pipeline de CI detectó además avisos nuevos de body-parser, multer y zod (corregidos con npm audit fix) y un falso positivo de Gitleaks (huella en `.gitleaksignore`).
