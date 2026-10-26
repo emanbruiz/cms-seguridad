@@ -8,14 +8,15 @@ export const MFA_COOKIE_NAME = 'mfa_token';
 export const cookieOptions = {
   httpOnly: true,
   sameSite: 'strict',
-    secure: config.cookieSecure,
+  secure: config.cookieSecure,
   maxAge: 30 * 60 * 1000,
 };
 
 export const mfaCookieOptions = { ...cookieOptions, maxAge: 5 * 60 * 1000 };
 
+// "tv" es la versión de tokens del usuario: si no coincide con la guardada, el token ya no vale
 export function signToken(user, { mfa = false } = {}) {
-  return jwt.sign({ role: user.role, mfa }, config.jwtSecret, {
+  return jwt.sign({ role: user.role, mfa, tv: user.tokenVersion ?? 0 }, config.jwtSecret, {
     algorithm: 'HS256',
     subject: String(user._id),
     expiresIn: '30m',
@@ -36,6 +37,16 @@ export function verifyMfaToken(token) {
   return payload;
 }
 
+// Devuelve el contenido del token de sesión o null si no es válido (sin responder al cliente)
+export function readSession(token) {
+  try {
+    const payload = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'] });
+    return payload.purpose === 'mfa' ? null : payload;
+  } catch {
+    return null;
+  }
+}
+
 export async function authenticate(req, res, next) {
   const token = req.cookies?.[COOKIE_NAME];
   if (!token) return res.status(401).json({ error: 'No autenticado' });
@@ -54,6 +65,11 @@ export async function authenticate(req, res, next) {
 
   const user = await User.findById(payload.sub);
   if (!user) return res.status(401).json({ error: 'Sesión inválida o expirada' });
+
+  // Token emitido antes de un cierre de sesión: revocado
+  if ((payload.tv ?? 0) !== (user.tokenVersion ?? 0)) {
+    return res.status(401).json({ error: 'Sesión inválida o expirada' });
+  }
 
   req.user = user;
   req.auth = { mfa: payload.mfa === true };

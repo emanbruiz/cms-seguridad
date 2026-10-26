@@ -12,6 +12,8 @@ import userRoutes from './routes/users.js';
 import postRoutes from './routes/posts.js';
 import mediaRoutes from './routes/media.js';
 import auditRoutes from './routes/audit.js';
+import { generalLimiter } from './middleware/rateLimit.js';
+
 
 const app = express();
 if (config.trustProxy) app.set('trust proxy', config.trustProxy);
@@ -24,6 +26,7 @@ app.use('/api/posts', express.json({ limit: '100kb' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
 app.use(auditRequests);
+app.use('/api', generalLimiter);
 
 app.get('/health', (req, res) => {
   res.json({

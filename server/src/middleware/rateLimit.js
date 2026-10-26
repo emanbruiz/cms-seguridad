@@ -1,5 +1,14 @@
 import rateLimit from 'express-rate-limit';
 
+// Límite general para toda la API: 120 peticiones por minuto y por IP
+export const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Demasiadas peticiones, esperá un momento' },
+});
+
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 5,

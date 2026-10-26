@@ -11,12 +11,14 @@ import {
   signToken,
   signMfaToken,
   verifyMfaToken,
+  readSession,
   COOKIE_NAME,
   MFA_COOKIE_NAME,
   cookieOptions,
   mfaCookieOptions,
 } from '../middleware/auth.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
+import { isWeakPassword } from '../utils/passwords.js';
 
 const router = Router();
 const DUMMY_HASH = await argon2.hash('contraseña-falsa-para-igualar-tiempos');
@@ -70,6 +72,14 @@ async function registerFailure(userId) {
 
 router.post('/register', registerLimiter, validate(registerSchema), async (req, res) => {
   const { name, email, password } = req.body;
+
+  if (isWeakPassword(password, { email, name })) {
+    return res.status(400).json({
+      error: 'Datos inválidos',
+      details: [{ field: 'password', message: 'Esa contraseña es demasiado común o fácil de adivinar' }],
+    });
+  }
+
   try {
     const passwordHash = await argon2.hash(password);
     const user = await User.create({ name, email, passwordHash });
@@ -170,7 +180,13 @@ router.post('/mfa/enable', authenticate, mfaLimiter, validate(mfaCodeSchema), as
   res.json({ user });
 });
 
-router.post('/logout', (req, res) => {
+// Cerrar sesión revoca todos los tokens del usuario: sube su versión de tokens
+router.post('/logout', async (req, res) => {
+  const session = readSession(req.cookies?.[COOKIE_NAME]);
+  if (session) {
+    await User.updateOne({ _id: session.sub }, { $inc: { tokenVersion: 1 } });
+    req.auditUser = { _id: session.sub };
+  }
   res.clearCookie(COOKIE_NAME, cookieOptions);
   res.clearCookie(MFA_COOKIE_NAME, mfaCookieOptions);
   res.json({ ok: true });
