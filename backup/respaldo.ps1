@@ -5,7 +5,7 @@ Uso, desde la raiz del repositorio:
   powershell -ExecutionPolicy Bypass -File .\backup\respaldo.ps1 -Accion respaldar
   powershell -ExecutionPolicy Bypass -File .\backup\respaldo.ps1 -Accion probar
 
-respaldar: genera un archivo comprimido en .\backups\ (cms-AAAAMMDD-HHmm.gz).
+respaldar: genera un archivo comprimido en .\backups\ (cms-AAAAMMDD-HHmm.gz) y borra los de mas de -RetencionDias (14 por defecto).
 probar:    toma el respaldo mas reciente, lo restaura en bases temporales (nombre_restore),
            compara la cantidad de documentos con las originales y borra las temporales.
            El resultado queda en docs\evidencias\respaldo-restauracion.txt.
@@ -15,10 +15,13 @@ El respaldo contiene hashes y semillas MFA cifradas: la carpeta backups\ no se s
 #>
 param(
   [ValidateSet('respaldar', 'probar')][string]$Accion = 'respaldar',
-  [string]$Archivo = ''
+  [string]$Archivo = '',
+  [int]$RetencionDias = 14
 )
 
 $ErrorActionPreference = 'Stop'
+# La carpeta del script es backup\; la raiz del repositorio (donde esta docker-compose.yml) es su carpeta padre
+Set-Location (Split-Path -Parent $PSScriptRoot)
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 $tmp = Join-Path $env:TEMP 'cms-respaldo'
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
@@ -75,6 +78,8 @@ if ($Accion -eq 'respaldar') {
   Invoke-Docker compose cp mongo:/tmp/respaldo.gz $salida
   Invoke-Docker compose exec -T mongo rm -f /tmp/respaldo.gz /tmp/respaldo.sh
   Write-Host "Respaldo guardado en $salida"
+  $viejos = Get-ChildItem $dest -Filter 'cms-*.gz' | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-$RetencionDias) }
+  if ($viejos) { $viejos | Remove-Item -Force; Write-Host "Se eliminaron $(@($viejos).Count) respaldos con mas de $RetencionDias dias" }
 }
 else {
   if (-not $Archivo) {

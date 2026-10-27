@@ -88,7 +88,7 @@ Ciclo de NIST SP 800-61: preparación, detección y análisis, contención, erra
 | Fuga de la base de datos | Aviso del SIEM, de GuardDuty o de un tercero | Aislar el contenedor de la base; rotar `JWT_SECRET`, `MFA_ENC_KEY` y la contraseña de la base | Todos los usuarios deben restablecer su contraseña y reenrolar el MFA; restaurar desde el último respaldo limpio |
 | Dependencia o imagen comprometida | UC-10 | Detener el despliegue | Actualizar o fijar la versión; reconstruir y escanear |
 
-**Capacidad de recuperación.** El diseño en la nube incluye respaldos de 14 días y protección contra el borrado. En el entorno local **no hay respaldo automatizado**: es el mayor riesgo residual del análisis (T-25) y se baja al implementar y probar un respaldo y su restauración.
+**Capacidad de recuperación.** El diseño en la nube incluye respaldos de 14 días y protección contra el borrado. En el entorno local se implementó `backup/respaldo.ps1`: respaldo comprimido con `mongodump`, tarea diaria programada y retención de 14 días, más una **prueba de restauración verificada** en bases temporales (116 documentos restaurados con 0 fallos y conteos iguales a los originales; evidencia en `docs/evidencias/respaldo-restauracion.txt`). El respaldo contiene hashes y semillas MFA cifradas, por lo que se excluye de Git y debe guardarse con acceso restringido. Limitaciones: queda en el mismo equipo (convendría una copia externa) y depende de que la computadora esté encendida a la hora programada (riesgo T-25, residual medio).
 
 ## 5. Métricas sugeridas
 
