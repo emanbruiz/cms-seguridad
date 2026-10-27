@@ -1,0 +1,33 @@
+﻿Prueba de restauracion 2026-10-26 20:37 con cms-20261026-2037.gz
+2026-10-27T02:37:58.132+0000	preparing collections to restore from
+2026-10-27T02:37:58.142+0000	reading metadata for `cms_restore.auditlogs` from "archive `/tmp/restaurar.gz`"
+2026-10-27T02:37:58.143+0000	reading metadata for `cms_restore.media` from "archive `/tmp/restaurar.gz`"
+2026-10-27T02:37:58.143+0000	reading metadata for `cms_restore.users` from "archive `/tmp/restaurar.gz`"
+2026-10-27T02:37:58.143+0000	reading metadata for `cms_restore.posts` from "archive `/tmp/restaurar.gz`"
+2026-10-27T02:37:58.160+0000	restoring `cms_restore.media` from "archive `/tmp/restaurar.gz`"
+2026-10-27T02:37:58.171+0000	finished restoring `cms_restore.media` (2 documents, 0 failures)
+2026-10-27T02:37:58.188+0000	restoring `cms_restore.posts` from "archive `/tmp/restaurar.gz`"
+2026-10-27T02:37:58.212+0000	finished restoring `cms_restore.posts` (2 documents, 0 failures)
+2026-10-27T02:37:58.229+0000	restoring `cms_restore.auditlogs` from "archive `/tmp/restaurar.gz`"
+2026-10-27T02:37:58.241+0000	finished restoring `cms_restore.auditlogs` (107 documents, 0 failures)
+2026-10-27T02:37:58.257+0000	restoring `cms_restore.users` from "archive `/tmp/restaurar.gz`"
+2026-10-27T02:37:58.267+0000	finished restoring `cms_restore.users` (5 documents, 0 failures)
+2026-10-27T02:37:58.267+0000	restoring indexes for collection `cms_restore.auditlogs` from metadata
+2026-10-27T02:37:58.267+0000	index: &idx.IndexDocument{Options:bson.M{"name":"userId_1", "v":2}, Key:bson.D{bson.E{Key:"userId", Value:1}}, PartialFilterExpression:(*bson.D)(nil)}
+2026-10-27T02:37:58.267+0000	index: &idx.IndexDocument{Options:bson.M{"expireAfterSeconds":7776000, "name":"createdAt_1", "v":2}, Key:bson.D{bson.E{Key:"createdAt", Value:1}}, PartialFilterExpression:(*bson.D)(nil)}
+2026-10-27T02:37:58.268+0000	index: &idx.IndexDocument{Options:bson.M{"name":"status_1_createdAt_-1", "v":2}, Key:bson.D{bson.E{Key:"status", Value:1}, bson.E{Key:"createdAt", Value:-1}}, PartialFilterExpression:(*bson.D)(nil)}
+2026-10-27T02:37:58.268+0000	restoring indexes for collection `cms_restore.media` from metadata
+2026-10-27T02:37:58.268+0000	index: &idx.IndexDocument{Options:bson.M{"name":"filename_1", "unique":true, "v":2}, Key:bson.D{bson.E{Key:"filename", Value:1}}, PartialFilterExpression:(*bson.D)(nil)}
+2026-10-27T02:37:58.268+0000	index: &idx.IndexDocument{Options:bson.M{"name":"owner_1", "v":2}, Key:bson.D{bson.E{Key:"owner", Value:1}}, PartialFilterExpression:(*bson.D)(nil)}
+2026-10-27T02:37:58.268+0000	restoring indexes for collection `cms_restore.users` from metadata
+2026-10-27T02:37:58.268+0000	index: &idx.IndexDocument{Options:bson.M{"name":"email_1", "unique":true, "v":2}, Key:bson.D{bson.E{Key:"email", Value:1}}, PartialFilterExpression:(*bson.D)(nil)}
+2026-10-27T02:37:58.268+0000	restoring indexes for collection `cms_restore.posts` from metadata
+2026-10-27T02:37:58.268+0000	index: &idx.IndexDocument{Options:bson.M{"name":"slug_1", "unique":true, "v":2}, Key:bson.D{bson.E{Key:"slug", Value:1}}, PartialFilterExpression:(*bson.D)(nil)}
+2026-10-27T02:37:58.268+0000	index: &idx.IndexDocument{Options:bson.M{"name":"author_1", "v":2}, Key:bson.D{bson.E{Key:"author", Value:1}}, PartialFilterExpression:(*bson.D)(nil)}
+2026-10-27T02:37:58.268+0000	index: &idx.IndexDocument{Options:bson.M{"name":"status_1_publishedAt_-1", "v":2}, Key:bson.D{bson.E{Key:"status", Value:1}, bson.E{Key:"publishedAt", Value:-1}}, PartialFilterExpression:(*bson.D)(nil)}
+2026-10-27T02:37:58.481+0000	116 document(s) restored successfully. 0 document(s) failed to restore.
+cms.auditlogs: original 107, restaurado 107, OK
+cms.users: original 5, restaurado 5, OK
+cms.posts: original 2, restaurado 2, OK
+cms.media: original 2, restaurado 2, OK
+Bases temporales eliminadas
