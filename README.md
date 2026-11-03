@@ -28,16 +28,16 @@ Solo el WAF publica un puerto (`127.0.0.1:8443`). La API y la base de datos vive
 
 ## Controles de seguridad principales
 
-| Área | Controles |
-|---|---|
-| Autenticación | argon2id, mínimo de 10 caracteres, rechazo de contraseñas comunes, MFA TOTP con semilla cifrada (AES-256-GCM), bloqueo tras intentos fallidos |
-| Sesión | JWT en cookie `HttpOnly`, `Secure` y `SameSite=Strict`; vigencia de 30 minutos; revocación al cerrar sesión |
-| Autorización | Roles verificados en el servidor y control de propietario en publicaciones e imágenes |
-| Entradas | Validación estricta con Zod (rechaza campos desconocidos), `sanitizeFilter` de Mongoose, Markdown sin HTML crudo |
-| Perímetro | WAF con OWASP CRS, TLS 1.3 exclusivo, CORS acotado, cabeceras CSP, HSTS y COOP, COEP y CORP |
-| Límites | 120 peticiones por minuto por IP en la API, con límites más estrictos para login, MFA, registro y subidas |
-| Contenedores | Usuario sin root, sistema de solo lectura, sin capacidades de Linux, imágenes de varias etapas |
-| Verificación continua | Gitleaks, Semgrep, `npm audit`, Trivy y Checkov en GitHub Actions, más Dependabot |
+| Área                  | Controles                                                                                                                                     |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Autenticación         | argon2id, mínimo de 10 caracteres, rechazo de contraseñas comunes, MFA TOTP con semilla cifrada (AES-256-GCM), bloqueo tras intentos fallidos |
+| Sesión                | JWT en cookie `HttpOnly`, `Secure` y `SameSite=Strict`; vigencia de 30 minutos; revocación al cerrar sesión                                   |
+| Autorización          | Roles verificados en el servidor y control de propietario en publicaciones e imágenes                                                         |
+| Entradas              | Validación estricta con Zod (rechaza campos desconocidos), `sanitizeFilter` de Mongoose, Markdown sin HTML crudo                              |
+| Perímetro             | WAF con OWASP CRS, TLS 1.3 exclusivo, CORS acotado, cabeceras CSP, HSTS y COOP, COEP y CORP                                                   |
+| Límites               | 120 peticiones por minuto por IP en la API, con límites más estrictos para login, MFA, registro y subidas                                     |
+| Contenedores          | Usuario sin root, sistema de solo lectura, sin capacidades de Linux, imágenes de varias etapas                                                |
+| Verificación continua | Gitleaks, Semgrep, `npm audit`, Trivy y Checkov en GitHub Actions, más Dependabot                                                             |
 
 ## Requisitos
 
@@ -82,14 +82,14 @@ Al iniciar sesión como administrador, el sistema exige activar el segundo facto
 
 ## Documentación
 
-| Archivo | Contenido |
-|---|---|
-| `docs/hallazgos.md` | Bitácora de hallazgos y controles por fase |
-| `docs/arquitectura.md` | Arquitectura de seguridad en AWS |
-| `docs/pentest.md` | Superficie de ataque y resultados de las pruebas de penetración |
-| `docs/siem-rasp.md` | Diseño de SIEM, RASP y respuesta a incidentes |
+| Archivo                             | Contenido                                                               |
+| ----------------------------------- | ----------------------------------------------------------------------- |
+| `docs/hallazgos.md`                 | Bitácora de hallazgos y controles por fase                              |
+| `docs/arquitectura.md`              | Arquitectura de seguridad en AWS                                        |
+| `docs/pentest.md`                   | Superficie de ataque y resultados de las pruebas de penetración         |
+| `docs/siem-rasp.md`                 | Diseño de SIEM, RASP y respuesta a incidentes                           |
 | `docs/analisis-de-riesgos-cms.xlsx` | Inventario de activos, STRIDE, DREAD, matriz de riesgos y mapa de calor |
-| `docs/evidencias/` | Escaneos, resultados de pruebas y verificaciones |
+| `docs/evidencias/`                  | Escaneos, resultados de pruebas y verificaciones                        |
 
 ## Estructura del repositorio
 
@@ -113,14 +113,14 @@ docker-compose.yml Servicios: mongo, api, web y waf
 
 ## Resultados
 
-| Indicador | Resultado |
-|---|---|
-| Activos y amenazas analizados | 24 activos y 29 amenazas (STRIDE y DREAD) |
-| Riesgo inicial | 2 críticas, 17 altas, 8 medias y 2 bajas |
-| Riesgo residual (v1.1) | 0 críticas, 0 altas, 16 medias y 13 bajas |
-| Pruebas de caja gris | 38 de 41 en la versión evaluada y 41 de 41 en la corregida |
-| Hallazgos | 14: 11 cerrados, 2 aceptados con justificación y 1 fuera de alcance |
-| Terraform (Checkov) | 249 pruebas pasadas, 0 fallidas y 7 omitidas con justificación |
+| Indicador                     | Resultado                                                           |
+| ----------------------------- | ------------------------------------------------------------------- |
+| Activos y amenazas analizados | 24 activos y 29 amenazas (STRIDE y DREAD)                           |
+| Riesgo inicial                | 2 críticas, 17 altas, 8 medias y 2 bajas                            |
+| Riesgo residual (v1.1)        | 0 críticas, 0 altas, 16 medias y 13 bajas                           |
+| Pruebas de caja gris          | 38 de 41 en la versión evaluada y 41 de 41 en la corregida          |
+| Hallazgos                     | 14: 11 cerrados, 2 aceptados con justificación y 1 fuera de alcance |
+| Terraform (Checkov)           | 249 pruebas pasadas, 0 fallidas y 7 omitidas con justificación      |
 
 ## Limitaciones
 
@@ -134,6 +134,6 @@ La infraestructura de AWS no se desplegó (solo se diseñó y se analizó), el S
 - Axel Mauricio Véliz Poom
 - Brayan Alexander Lázaro Fuentes
 
-Catedrático: Ing. César Rodríguez Minas.
+Catedrático: Ing. Osberto Saul Gallo Orozco.
 
 Proyecto con fines académicos.
