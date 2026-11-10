@@ -18,6 +18,9 @@ const userSchema = new mongoose.Schema(
     mfaLastCodeAt: { type: Date, select: false },
     mfaFailCount: { type: Number, default: 0, select: false },
     mfaLockUntil: { type: Date, select: false },
+    // Bloqueo progresivo del inicio de sesión por cuenta (independiente de la IP)
+    loginFailCount: { type: Number, default: 0, select: false },
+    loginLockUntil: { type: Date, select: false },
   },
   { timestamps: true }
 );
@@ -30,6 +33,8 @@ const HIDDEN = [
   'mfaLastCodeAt',
   'mfaFailCount',
   'mfaLockUntil',
+  'loginFailCount',
+  'loginLockUntil',
   '__v',
 ];
 

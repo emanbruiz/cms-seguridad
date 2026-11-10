@@ -9,9 +9,11 @@ export const generalLimiter = rateLimit({
   message: { error: 'Demasiadas peticiones, esperá un momento' },
 });
 
+// Inicio de sesión por IP: 10 fallos cada 15 minutos, contra el relleno de credenciales desde una IP.
+// Cada cuenta tiene además su propio bloqueo progresivo (routes/auth.js), que no depende de la IP.
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 5,
+  limit: 10,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   skipSuccessfulRequests: true,
