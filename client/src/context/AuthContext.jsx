@@ -46,6 +46,12 @@ export function AuthProvider({ children }) {
     setMfa(false);
   };
 
+  const logoutAll = async () => {
+    await api('/auth/logout-all', { method: 'POST' });
+    setUser(null);
+    setMfa(false);
+  };
+
   const refresh = async () => {
     const data = await api('/auth/me');
     setUser(data.user);
@@ -53,7 +59,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, mfa, loading, login, verifyMfa, register, logout, refresh }}>
+    <AuthContext.Provider value={{ user, mfa, loading, login, verifyMfa, register, logout, logoutAll, refresh }}>
       {children}
     </AuthContext.Provider>
   );

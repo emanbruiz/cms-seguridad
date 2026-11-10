@@ -224,3 +224,25 @@ Alcance: https://localhost:8443 (sistema propio, entorno local). Versión evalua
 - Caja gris y abuso: 41 pruebas automatizadas (`pentest/caja-gris.ps1`). En v1.0, 38 en OK y 3 hallazgos: contraseñas comunes aceptadas, token vigente después de cerrar sesión y ausencia de límite global de peticiones.
 - Corrección en v1.1: lista de contraseñas comunes, versión de token por usuario revocada al cerrar sesión, límite general de 120 peticiones por minuto, TLS 1.3 exclusivo, CORS acotado y cabeceras COOP, COEP y CORP. Resultado: 41 de 41 en OK.
 - El pipeline de CI detectó además avisos nuevos de body-parser, multer y zod (corregidos con npm audit fix) y un falso positivo de Gitleaks (huella en `.gitleaksignore`).
+
+## Mejora v1.2, paso 1: cambio de contraseña y cierre de todas las sesiones
+
+Motivo: el plan de respuesta a incidentes dependía de cambios manuales en la base para reemplazar una contraseña o revocar las sesiones de una cuenta comprometida. Relacionado con las amenazas T-01 (robo de contraseñas) y T-04 (robo de sesión).
+
+Amenazas consideradas con STRIDE:
+
+- Suplantación: una sesión robada cambia la contraseña y se apropia de la cuenta. Control: se exige la contraseña actual.
+- Suplantación: fuerza bruta de la contraseña actual desde una sesión robada. Control: 5 fallos cada 15 minutos por usuario, no por IP, para que cambiar de IP no sirva.
+- Elevación de privilegios: cambiar la contraseña de otro usuario. Control: la ruta solo usa el usuario de la sesión y el esquema estricto rechaza campos extra como `userId`.
+- Repudio: el cambio queda en la auditoría (`POST /api/auth/password`, con usuario, IP y estado) y en el registro de la API.
+- Divulgación de información: las contraseñas no se guardan en la auditoría ni en los registros.
+
+Controles implementados:
+
+- `POST /api/auth/password`: sesión obligatoria, límite por usuario, esquema estricto, verificación de la contraseña actual con argon2id, la nueva tiene que ser distinta y pasa la misma política que el registro (mínimo de 10 caracteres y rechazo de contraseñas comunes). Al cambiarla se incrementa `tokenVersion`, lo que revoca todas las demás sesiones; la sesión actual recibe un token nuevo y conserva su estado de MFA.
+- `POST /api/auth/logout-all`: sesión obligatoria, sin cuerpo. Incrementa `tokenVersion` y borra las cookies, lo que cierra todas las sesiones, incluida la actual.
+- Página Seguridad: formularios de cambio de contraseña (con confirmación) y botón para cerrar todas las sesiones.
+
+Pruebas nuevas en `pentest/caja-gris.ps1` (grupo C): C-01 sin sesión (401), C-02 contraseña actual incorrecta (400), C-03 contraseña común (400), C-04 campo extra `userId` (400), C-05 cambio válido (200), C-06 la sesión actual sigue activa (200), C-07 otra sesión anterior queda revocada (401), C-08 la contraseña anterior ya no sirve (401), C-09 cerrar todas las sesiones (200) y C-10 ningún token anterior vale después (dos 401).
+
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-cuentas.txt`.

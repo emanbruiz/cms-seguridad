@@ -42,3 +42,15 @@ export const mfaLimiter = rateLimit({
   skipSuccessfulRequests: true,
   message: { error: 'Demasiados intentos de código, intentá de nuevo en 15 minutos' },
 });
+
+// Cambio de contraseña: 5 fallos cada 15 minutos por usuario (no por IP), para que una sesión
+// robada no pueda probar contraseñas actuales desde muchas IP. Va después de authenticate.
+export const passwordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => `usuario:${req.user._id}`,
+  message: { error: 'Demasiados intentos, intentá de nuevo en 15 minutos' },
+});

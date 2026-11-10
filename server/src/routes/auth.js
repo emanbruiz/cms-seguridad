@@ -4,8 +4,14 @@ import QRCode from 'qrcode';
 import { generateSecret, verify as verifyTotp } from 'otplib';
 import { User } from '../models/User.js';
 import { validate } from '../middleware/validate.js';
-import { registerSchema, loginSchema, mfaCodeSchema } from '../validators/auth.js';
-import { loginLimiter, registerLimiter, mfaLimiter } from '../middleware/rateLimit.js';
+import {
+  registerSchema,
+  loginSchema,
+  mfaCodeSchema,
+  changePasswordSchema,
+  emptyBodySchema,
+} from '../validators/auth.js';
+import { loginLimiter, registerLimiter, mfaLimiter, passwordLimiter } from '../middleware/rateLimit.js';
 import {
   authenticate,
   signToken,
@@ -187,6 +193,55 @@ router.post('/logout', async (req, res) => {
     await User.updateOne({ _id: session.sub }, { $inc: { tokenVersion: 1 } });
     req.auditUser = { _id: session.sub };
   }
+  res.clearCookie(COOKIE_NAME, cookieOptions);
+  res.clearCookie(MFA_COOKIE_NAME, mfaCookieOptions);
+  res.json({ ok: true });
+});
+
+// Cambio de contraseña: exige la actual, aplica la misma política que el registro y revoca todas
+// las demás sesiones (sube la versión de tokens). La sesión actual recibe un token nuevo.
+router.post('/password', authenticate, passwordLimiter, validate(changePasswordSchema), async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await User.findById(req.user._id).select('+passwordHash');
+
+  if (!(await argon2.verify(user.passwordHash, currentPassword))) {
+    req.log.warn({ userId: String(user._id) }, 'cambio de contraseña con clave actual incorrecta');
+    return res.status(400).json({
+      error: 'Datos inválidos',
+      details: [{ field: 'currentPassword', message: 'La contraseña actual no es correcta' }],
+    });
+  }
+
+  if (newPassword === currentPassword) {
+    return res.status(400).json({
+      error: 'Datos inválidos',
+      details: [{ field: 'newPassword', message: 'La nueva contraseña tiene que ser distinta de la actual' }],
+    });
+  }
+
+  if (isWeakPassword(newPassword, { email: user.email, name: user.name })) {
+    return res.status(400).json({
+      error: 'Datos inválidos',
+      details: [{ field: 'newPassword', message: 'Esa contraseña es demasiado común o fácil de adivinar' }],
+    });
+  }
+
+  const passwordHash = await argon2.hash(newPassword);
+  const updated = await User.findByIdAndUpdate(
+    user._id,
+    { $set: { passwordHash }, $inc: { tokenVersion: 1 } },
+    { returnDocument: 'after' }
+  );
+
+  req.log.info({ userId: String(user._id) }, 'contraseña cambiada; sesiones anteriores revocadas');
+  res.cookie(COOKIE_NAME, signToken(updated, { mfa: req.auth.mfa }), cookieOptions);
+  res.json({ ok: true });
+});
+
+// Cerrar todas las sesiones, incluida la actual (por ejemplo, ante un dispositivo perdido)
+router.post('/logout-all', authenticate, validate(emptyBodySchema), async (req, res) => {
+  await User.updateOne({ _id: req.user._id }, { $inc: { tokenVersion: 1 } });
+  req.log.info({ userId: String(req.user._id) }, 'todas las sesiones cerradas');
   res.clearCookie(COOKIE_NAME, cookieOptions);
   res.clearCookie(MFA_COOKIE_NAME, mfaCookieOptions);
   res.json({ ok: true });
