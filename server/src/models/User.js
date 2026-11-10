@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ROLES, default: 'lector' },
     // Se incrementa al cerrar sesión: invalida todos los tokens emitidos antes
     tokenVersion: { type: Number, default: 0 },
+    // Cuenta suspendida por un administrador: no puede iniciar sesión ni usar sesiones abiertas
+    suspended: { type: Boolean, default: false },
     mfaEnabled: { type: Boolean, default: false },
     mfaSecretEnc: { type: String, select: false },
     mfaLastCode: { type: String, select: false },

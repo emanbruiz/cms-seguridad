@@ -110,6 +110,12 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
     return res.status(401).json({ error: 'Credenciales inválidas' });
   }
 
+  // Cuenta suspendida: el mismo mensaje que unas credenciales inválidas, para no revelar el estado
+  if (user.suspended) {
+    req.log.warn({ userId: String(user._id) }, 'login de cuenta suspendida');
+    return res.status(401).json({ error: 'Credenciales inválidas' });
+  }
+
   res.clearCookie(COOKIE_NAME, cookieOptions);
 
   if (user.mfaEnabled) {
@@ -135,7 +141,7 @@ router.post('/mfa/verify', mfaLimiter, validate(mfaCodeSchema), async (req, res)
   }
 
   const user = await User.findById(payload.sub).select(MFA_FIELDS);
-  if (!user || !user.mfaEnabled) {
+  if (!user || !user.mfaEnabled || user.suspended) {
     return res.status(401).json({ error: 'La verificación expiró, ingresá de nuevo' });
   }
   req.auditUser = user;

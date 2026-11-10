@@ -267,4 +267,31 @@ Controles implementados:
 
 Pruebas nuevas en `pentest/caja-gris.ps1` (grupo M), con un usuario de prueba y códigos TOTP calculados por el propio script según RFC 6238: M-01 activar sin contraseña (400), M-02 con contraseña incorrecta (400), M-03 con la correcta (200), M-04 confirmar con el código de la app (200), M-05 desactivar con código incorrecto (400), M-06 desactivar con contraseña incorrecta (400), M-07 desactivar con contraseña y código vigente (200) y M-08 la cuenta queda sin MFA. La restricción del administrador se verifica a mano, porque el script no usa la cuenta de administrador.
 
-Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-mfa.txt`.
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-mfa.txt` (59 de 59 en OK).
+
+Falso positivo de Gitleaks: al subir el paso 1, el pipeline marcó como posible secreto una contraseña incorrecta escrita a propósito en la prueba C-02 (regla `generic-api-key`). No es un secreto: es el valor que la prueba usa para comprobar el rechazo. Se registró su huella en `.gitleaksignore`, igual que el H-10, y el script ahora genera esa contraseña al azar en cada corrida para que no vuelva a aparecer.
+
+## Mejora v1.2, paso 3: suspensión de cuentas y cierre de sesiones por el administrador
+
+Motivo: ante una cuenta comprometida, el plan de respuesta a incidentes dependía de editar la base de datos a mano (incrementar `tokenVersion`) o de bajar el rol con `set-role.js`. No había forma de suspender una cuenta.
+
+Amenazas consideradas con STRIDE:
+
+- Elevación de privilegios: un editor o lector suspende cuentas o cierra sesiones ajenas. Control: solo el administrador con MFA verificado (`authorize('admin')`).
+- Denegación de servicio: un administrador comprometido suspende a los demás administradores. Control: no se puede suspender a otro administrador sin cambiarle antes el rol, ni a uno mismo.
+- Divulgación de información: el inicio de sesión revela que una cuenta está suspendida. Control: la cuenta suspendida recibe el mismo 401 que unas credenciales inválidas.
+- Suplantación: una sesión abierta antes de la suspensión sigue funcionando. Control: suspender incrementa `tokenVersion` y, además, `authenticate` rechaza toda sesión de una cuenta suspendida.
+- Repudio: cada suspensión, reactivación y cierre de sesiones queda en la auditoría (con el administrador que lo hizo) y en el registro de la API.
+
+Controles implementados:
+
+- Campo `suspended` en el usuario. `authenticate`, el inicio de sesión y la verificación de MFA rechazan las cuentas suspendidas.
+- `PATCH /api/users/:id/status` con `{ suspended }`: solo admin con MFA, ID validado, esquema estricto; no sobre uno mismo ni sobre otro admin; suspender revoca todas las sesiones.
+- `POST /api/users/:id/revoke-sessions`: solo admin con MFA; cierra todas las sesiones de otro usuario.
+- Página Usuarios: columna de estado y botones para suspender, reactivar y cerrar sesiones, con confirmación.
+
+Con esto, los escenarios "Fuerza bruta o robo de cuenta" y "Escalada de privilegios" del plan de respuesta a incidentes ya no requieren cambios manuales en la base para cerrar sesiones ni para bloquear una cuenta.
+
+Pruebas nuevas en `pentest/caja-gris.ps1` (grupo X). Siempre se ejecutan: X-01 un editor intenta suspender (403), X-02 un lector intenta cerrar sesiones ajenas (403) y X-03 sin sesión (401). Con una cuenta admin de pruebas con MFA (parámetros `-AdminCorreo`, `-AdminClave` y `-AdminSemilla`, o sus variables de entorno, que nunca se guardan en el repositorio) se ejecutan además: X-04 el admin no puede suspenderse (400), X-05 campos extra (400), X-06 suspender (200), X-07 la sesión abierta deja de valer (401), X-08 el inicio de sesión de la cuenta suspendida da el mismo error que unas credenciales inválidas, X-09 reactivar (200), X-10 la cuenta reactivada inicia sesión (200), X-11 cerrar sus sesiones (200) y X-12 el token anterior deja de valer (401). Con esto, el script también automatiza pruebas del rol administrador con MFA, que antes solo se verificaban a mano (recomendación 9 del informe).
+
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-admin.txt`.

@@ -71,6 +71,11 @@ export async function authenticate(req, res, next) {
     return res.status(401).json({ error: 'Sesión inválida o expirada' });
   }
 
+  // Cuenta suspendida: ninguna sesión vale (la suspensión además revoca los tokens)
+  if (user.suspended) {
+    return res.status(401).json({ error: 'Sesión inválida o expirada' });
+  }
+
   req.user = user;
   req.auth = { mfa: payload.mfa === true };
   next();
