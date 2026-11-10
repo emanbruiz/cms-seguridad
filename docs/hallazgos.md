@@ -245,4 +245,26 @@ Controles implementados:
 
 Pruebas nuevas en `pentest/caja-gris.ps1` (grupo C): C-01 sin sesión (401), C-02 contraseña actual incorrecta (400), C-03 contraseña común (400), C-04 campo extra `userId` (400), C-05 cambio válido (200), C-06 la sesión actual sigue activa (200), C-07 otra sesión anterior queda revocada (401), C-08 la contraseña anterior ya no sirve (401), C-09 cerrar todas las sesiones (200) y C-10 ningún token anterior vale después (dos 401).
 
-Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-cuentas.txt`.
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-cuentas.txt` (51 de 51 en OK).
+
+## Mejora v1.2, paso 2: MFA con reautenticación y desactivación verificada
+
+Motivo: activar el MFA solo exigía una sesión. Quien robara la sesión de un usuario sin MFA podía enrolar su propio autenticador y dejar fuera al titular. Además no existía forma de desactivarlo sin tocar la base de datos.
+
+Amenazas consideradas con STRIDE:
+
+- Suplantación: enrolar un autenticador ajeno con una sesión robada. Control: activar el MFA exige la contraseña actual.
+- Suplantación y denegación de servicio: desactivar el MFA de la víctima para debilitar su cuenta. Control: exige contraseña y un código vigente de la app; el código no se puede reutilizar durante 90 segundos.
+- Elevación de privilegios: dejar al administrador sin segundo factor. Control: el administrador no puede desactivar el MFA (403).
+- Suplantación: fuerza bruta de la contraseña desde una sesión robada. Control: el mismo límite por usuario del cambio de contraseña (5 fallos cada 15 minutos) protege ambas rutas.
+- Repudio: activar y desactivar el MFA queda en la auditoría y en el registro de la API.
+
+Controles implementados:
+
+- `POST /api/auth/mfa/setup`: ahora exige `{ password }`, con esquema estricto y límite por usuario.
+- `POST /api/auth/mfa/disable`: exige `{ password, code }`; rechaza al administrador; borra la semilla cifrada y los datos de bloqueo; incrementa `tokenVersion`, lo que cierra las demás sesiones, y entrega un token nuevo a la sesión actual.
+- Página Seguridad: pide la contraseña antes de mostrar el código QR y agrega el formulario para desactivar el MFA, que no aparece para el administrador.
+
+Pruebas nuevas en `pentest/caja-gris.ps1` (grupo M), con un usuario de prueba y códigos TOTP calculados por el propio script según RFC 6238: M-01 activar sin contraseña (400), M-02 con contraseña incorrecta (400), M-03 con la correcta (200), M-04 confirmar con el código de la app (200), M-05 desactivar con código incorrecto (400), M-06 desactivar con contraseña incorrecta (400), M-07 desactivar con contraseña y código vigente (200) y M-08 la cuenta queda sin MFA. La restricción del administrador se verifica a mano, porque el script no usa la cuenta de administrador.
+
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-mfa.txt`.
