@@ -33,7 +33,7 @@ export default function Register() {
       <form onSubmit={onSubmit} className="space-y-3">
         <input className={input} placeholder="Nombre" value={form.name} onChange={update('name')} required minLength={2} maxLength={60} />
         <input className={input} type="email" placeholder="Correo" value={form.email} onChange={update('email')} required maxLength={254} autoComplete="email" />
-        <input className={input} type="password" placeholder="Contraseña (mínimo 10 caracteres)" value={form.password} onChange={update('password')} required minLength={10} maxLength={128} autoComplete="new-password" />
+        <input className={input} type="password" placeholder="Contraseña (mínimo 15 caracteres)" value={form.password} onChange={update('password')} required minLength={15} maxLength={128} autoComplete="new-password" />
         {errors.map((m) => <p key={m} className="text-sm text-red-600">{m}</p>)}
         <button disabled={busy} className="w-full rounded bg-slate-900 p-2 text-white disabled:opacity-50">
           {busy ? 'Creando...' : 'Registrarse'}

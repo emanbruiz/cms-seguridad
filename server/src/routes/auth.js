@@ -33,6 +33,11 @@ const DUMMY_HASH = await argon2.hash('contraseña-falsa-para-igualar-tiempos');
 const MAX_FAILS = 5;
 const LOCK_MS = 15 * 60 * 1000;
 const REPLAY_WINDOW_MS = 90 * 1000;
+// Bloqueo por cuenta: desde el 5.º fallo seguido, 1 minuto, y se duplica en cada fallo hasta 15 minutos
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_BASE_LOCK_MS = 60 * 1000;
+const LOGIN_MAX_LOCK_MS = 15 * 60 * 1000;
+const LOGIN_ERROR = { error: 'Credenciales inválidas' };
 const MFA_FIELDS = '+mfaSecretEnc +mfaLastCode +mfaLastCodeAt +mfaFailCount +mfaLockUntil';
 
 function otpauthUri(email, secret) {
@@ -61,6 +66,19 @@ async function checkTotp(user, code) {
     user.mfaLastCodeAt = new Date();
   }
   return valid;
+}
+
+async function registerLoginFailure(userId) {
+  const updated = await User.findByIdAndUpdate(
+    userId,
+    { $inc: { loginFailCount: 1 } },
+    { returnDocument: 'after' }
+  ).select('+loginFailCount');
+
+  if (updated && updated.loginFailCount >= LOGIN_MAX_FAILS) {
+    const ms = Math.min(LOGIN_BASE_LOCK_MS * 2 ** (updated.loginFailCount - LOGIN_MAX_FAILS), LOGIN_MAX_LOCK_MS);
+    await User.updateOne({ _id: userId }, { $set: { loginLockUntil: new Date(Date.now() + ms) } });
+  }
 }
 
 async function registerFailure(userId) {
@@ -102,18 +120,32 @@ router.post('/register', registerLimiter, validate(registerSchema), async (req, 
 
 router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email }).select('+passwordHash');
+  const user = await User.findOne({ email }).select('+passwordHash +loginFailCount +loginLockUntil');
+
+  // Cuenta bloqueada por fallos seguidos: no se verifica la contraseña (no sirve para adivinarla)
+  // y se responde igual que unas credenciales inválidas, con un tiempo de respuesta similar
+  if (user?.loginLockUntil && user.loginLockUntil > new Date()) {
+    await argon2.verify(DUMMY_HASH, password);
+    req.log.warn({ userId: String(user._id) }, 'login con la cuenta bloqueada temporalmente');
+    return res.status(401).json(LOGIN_ERROR);
+  }
+
   const valid = await argon2.verify(user ? user.passwordHash : DUMMY_HASH, password);
 
   if (!user || !valid) {
+    if (user) await registerLoginFailure(user._id);
     req.log.warn({ email }, 'login fallido');
-    return res.status(401).json({ error: 'Credenciales inválidas' });
+    return res.status(401).json(LOGIN_ERROR);
   }
 
   // Cuenta suspendida: el mismo mensaje que unas credenciales inválidas, para no revelar el estado
   if (user.suspended) {
     req.log.warn({ userId: String(user._id) }, 'login de cuenta suspendida');
-    return res.status(401).json({ error: 'Credenciales inválidas' });
+    return res.status(401).json(LOGIN_ERROR);
+  }
+
+  if (user.loginFailCount || user.loginLockUntil) {
+    await User.updateOne({ _id: user._id }, { $set: { loginFailCount: 0 }, $unset: { loginLockUntil: 1 } });
   }
 
   res.clearCookie(COOKIE_NAME, cookieOptions);

@@ -58,12 +58,12 @@ function CambioContrasena() {
           <input type="password" className={inputClass} autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} required maxLength={128} />
         </label>
         <label className="block text-sm">
-          Nueva contraseña
-          <input type="password" className={inputClass} autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} required minLength={10} maxLength={128} />
+          Nueva contraseña (mínimo 15 caracteres)
+          <input type="password" className={inputClass} autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} required minLength={15} maxLength={128} />
         </label>
         <label className="block text-sm">
           Confirmá la nueva contraseña
-          <input type="password" className={inputClass} autoComplete="new-password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} required minLength={10} maxLength={128} />
+          <input type="password" className={inputClass} autoComplete="new-password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} required minLength={15} maxLength={128} />
         </label>
         <button disabled={busy} className={buttonClass}>
           {busy ? 'Guardando...' : 'Cambiar contraseña'}

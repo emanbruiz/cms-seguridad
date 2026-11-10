@@ -294,4 +294,26 @@ Con esto, los escenarios "Fuerza bruta o robo de cuenta" y "Escalada de privileg
 
 Pruebas nuevas en `pentest/caja-gris.ps1` (grupo X). Siempre se ejecutan: X-01 un editor intenta suspender (403), X-02 un lector intenta cerrar sesiones ajenas (403) y X-03 sin sesión (401). Con una cuenta admin de pruebas con MFA (parámetros `-AdminCorreo`, `-AdminClave` y `-AdminSemilla`, o sus variables de entorno, que nunca se guardan en el repositorio) se ejecutan además: X-04 el admin no puede suspenderse (400), X-05 campos extra (400), X-06 suspender (200), X-07 la sesión abierta deja de valer (401), X-08 el inicio de sesión de la cuenta suspendida da el mismo error que unas credenciales inválidas, X-09 reactivar (200), X-10 la cuenta reactivada inicia sesión (200), X-11 cerrar sus sesiones (200) y X-12 el token anterior deja de valer (401). Con esto, el script también automatiza pruebas del rol administrador con MFA, que antes solo se verificaban a mano (recomendación 9 del informe).
 
-Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-admin.txt`.
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-admin.txt` (71 de 71 en OK).
+
+## Mejora v1.2, pasos 4 y 5: bloqueo por cuenta, contraseñas de 15 caracteres y mensajes en español
+
+Motivo: el inicio de sesión solo tenía un límite por IP. Un ataque distribuido desde muchas IP podía probar contraseñas contra una misma cuenta sin freno, y el bloqueo por IP dejaba fuera a todos los usuarios que compartían esa IP (prueba A-02, riesgo T-17). Además, NIST SP 800-63B-4 pide al menos 15 caracteres para las contraseñas que se usan sin segundo factor, y el mínimo era 10. Por último, algunos errores de validación llegaban al usuario con el texto en inglés de Zod.
+
+Amenazas consideradas con STRIDE:
+
+- Suplantación: relleno de credenciales distribuido contra una cuenta. Control: bloqueo progresivo por cuenta, guardado en la base, que no depende de la IP.
+- Denegación de servicio: usar el bloqueo para dejar fuera al titular (T-17). Control: el bloqueo es progresivo y corto (1 minuto desde el 5.º fallo seguido, duplicándose hasta un máximo de 15) y se reinicia con un inicio de sesión correcto.
+- Divulgación de información: que el bloqueo revele qué correos existen. Control: la cuenta bloqueada recibe el mismo 401 que unas credenciales inválidas y el servidor ejecuta una verificación argon2 falsa para igualar el tiempo de respuesta.
+- Suplantación: adivinar la contraseña mientras la cuenta está bloqueada. Control: durante el bloqueo la contraseña ni siquiera se verifica.
+
+Controles implementados:
+
+- Campos `loginFailCount` y `loginLockUntil` (ocultos) en el usuario; bloqueo progresivo en `POST /api/auth/login`.
+- El límite por IP del inicio de sesión pasa de 5 a 10 fallos cada 15 minutos. No se debilita la protección: cada cuenta queda protegida por su propio bloqueo desde el 5.º fallo, y el límite por IP sigue frenando el relleno de credenciales contra muchas cuentas. A cambio, un usuario que se equivoca ya no deja fuera tan rápido a los demás usuarios de su misma IP.
+- Mínimo de 15 caracteres para las contraseñas nuevas (registro y cambio de contraseña), en el servidor y en los formularios. Las contraseñas existentes siguen sirviendo para iniciar sesión; el mínimo se aplica al crearlas o cambiarlas.
+- `middleware/validate.js` traduce al español los mensajes genéricos de Zod (campos faltantes, longitudes, formato, campos no permitidos), sin revelar detalles internos.
+
+Pruebas nuevas en `pentest/caja-gris.ps1`: S-11 contraseña de 14 caracteres en el registro (400); grupo L con un usuario de prueba: L-01 cinco contraseñas incorrectas seguidas (cinco 401), L-02 con la cuenta bloqueada hasta la contraseña correcta recibe 401 y L-03 la respuesta es idéntica a la de unas credenciales inválidas. A-01 ahora usa un correo inexistente, para medir solo el límite por IP sin bloquear cuentas reales. Los usuarios que crea el script usan una clave generada de más de 15 caracteres.
+
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-login.txt`.
