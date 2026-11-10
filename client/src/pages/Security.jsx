@@ -76,16 +76,25 @@ function CambioContrasena() {
 function Mfa() {
   const { user, refresh } = useAuth();
   const [setup, setSetup] = useState(null);
+  const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
+  const [aviso, setAviso] = useState('');
 
-  const start = async () => {
+  const limpiar = () => {
+    setPassword('');
+    setCode('');
+  };
+
+  const start = async (e) => {
+    e.preventDefault();
     setError('');
+    setAviso('');
     setBusy(true);
     try {
-      setSetup(await api('/auth/mfa/setup', { method: 'POST' }));
+      setSetup(await api('/auth/mfa/setup', { method: 'POST', body: { password } }));
+      limpiar();
     } catch (err) {
       setError(mensajeDe(err));
     } finally {
@@ -100,8 +109,8 @@ function Mfa() {
     try {
       await api('/auth/mfa/enable', { method: 'POST', body: { code } });
       setSetup(null);
-      setCode('');
-      setDone(true);
+      limpiar();
+      setAviso('MFA activado correctamente.');
       await refresh();
     } catch (err) {
       setError(mensajeDe(err));
@@ -110,38 +119,88 @@ function Mfa() {
     }
   };
 
+  const disable = async (e) => {
+    e.preventDefault();
+    setError('');
+    setAviso('');
+    setBusy(true);
+    try {
+      await api('/auth/mfa/disable', { method: 'POST', body: { password, code } });
+      limpiar();
+      setAviso('MFA desactivado. Cerramos tus sesiones en otros dispositivos.');
+      await refresh();
+    } catch (err) {
+      setError(mensajeDe(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const campoCodigo = (
+    <input className={inputClass} inputMode="numeric" autoComplete="one-time-code" placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} required minLength={6} maxLength={6} />
+  );
+  const campoPassword = (
+    <label className="block text-sm">
+      Contraseña actual
+      <input type="password" className={inputClass} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required maxLength={128} />
+    </label>
+  );
+
+  let contenido;
+  if (user.mfaEnabled && user.role === 'admin') {
+    contenido = (
+      <p>La verificación en dos pasos está <strong>activa</strong>. Para el administrador es obligatoria y no se puede desactivar.</p>
+    );
+  } else if (user.mfaEnabled) {
+    contenido = (
+      <div className="space-y-3">
+        <p>La verificación en dos pasos está <strong>activa</strong> en tu cuenta.</p>
+        <form onSubmit={disable} className="space-y-3">
+          <p className="text-sm">Para desactivarla, confirmá tu contraseña y un código de la app.</p>
+          {campoPassword}
+          {campoCodigo}
+          <button disabled={busy} className={buttonClass}>
+            {busy ? 'Verificando...' : 'Desactivar MFA'}
+          </button>
+        </form>
+      </div>
+    );
+  } else if (setup) {
+    contenido = (
+      <div className="space-y-3">
+        <p className="text-sm">1. En Microsoft Authenticator tocá <strong>+</strong> → <strong>Otra cuenta</strong> y escaneá este código QR.</p>
+        <img src={setup.qr} alt="Código QR para activar MFA" width={220} height={220} />
+        <p className="text-sm">¿No podés escanear? Ingresá esta clave a mano: <code className="break-all">{setup.secret}</code></p>
+        <p className="text-sm">2. Escribí el código de 6 dígitos que muestra la app.</p>
+        <form onSubmit={enable} className="space-y-3">
+          {campoCodigo}
+          <button disabled={busy} className={buttonClass}>
+            {busy ? 'Verificando...' : 'Activar'}
+          </button>
+        </form>
+      </div>
+    );
+  } else {
+    contenido = (
+      <form onSubmit={start} className="space-y-3">
+        <p>
+          Agregá una segunda verificación con una app de autenticación.
+          {user.role === 'admin' && ' Como admin, es obligatoria para usar el panel.'}
+        </p>
+        {campoPassword}
+        <button disabled={busy} className={buttonClass}>
+          {busy ? 'Generando...' : 'Activar MFA'}
+        </button>
+      </form>
+    );
+  }
+
   return (
     <div className={cardClass}>
       <h2 className="text-lg font-semibold">Verificación en dos pasos (MFA)</h2>
-      {done && <p className="rounded bg-green-100 p-3 text-green-800">MFA activado correctamente.</p>}
+      {aviso && <p className="rounded bg-green-100 p-3 text-green-800">{aviso}</p>}
       {error && <p className="text-red-600">{error}</p>}
-
-      {user.mfaEnabled ? (
-        <p>La verificación en dos pasos está <strong>activa</strong> en tu cuenta.</p>
-      ) : setup ? (
-        <div className="space-y-3">
-          <p className="text-sm">1. En Microsoft Authenticator tocá <strong>+</strong> → <strong>Otra cuenta</strong> y escaneá este código QR.</p>
-          <img src={setup.qr} alt="Código QR para activar MFA" width={220} height={220} />
-          <p className="text-sm">¿No podés escanear? Ingresá esta clave a mano: <code className="break-all">{setup.secret}</code></p>
-          <p className="text-sm">2. Escribí el código de 6 dígitos que muestra la app.</p>
-          <form onSubmit={enable} className="space-y-3">
-            <input className={inputClass} inputMode="numeric" autoComplete="one-time-code" placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} required minLength={6} maxLength={6} />
-            <button disabled={busy} className={buttonClass}>
-              {busy ? 'Verificando...' : 'Activar'}
-            </button>
-          </form>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <p>
-            Agregá una segunda verificación con una app de autenticación.
-            {user.role === 'admin' && ' Como admin, es obligatoria para usar el panel.'}
-          </p>
-          <button onClick={start} disabled={busy} className={buttonClass}>
-            {busy ? 'Generando...' : 'Activar MFA'}
-          </button>
-        </div>
-      )}
+      {contenido}
     </div>
   );
 }

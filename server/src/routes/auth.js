@@ -10,6 +10,8 @@ import {
   mfaCodeSchema,
   changePasswordSchema,
   emptyBodySchema,
+  mfaSetupSchema,
+  mfaDisableSchema,
 } from '../validators/auth.js';
 import { loginLimiter, registerLimiter, mfaLimiter, passwordLimiter } from '../middleware/rateLimit.js';
 import {
@@ -108,6 +110,12 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
     return res.status(401).json({ error: 'Credenciales inválidas' });
   }
 
+  // Cuenta suspendida: el mismo mensaje que unas credenciales inválidas, para no revelar el estado
+  if (user.suspended) {
+    req.log.warn({ userId: String(user._id) }, 'login de cuenta suspendida');
+    return res.status(401).json({ error: 'Credenciales inválidas' });
+  }
+
   res.clearCookie(COOKIE_NAME, cookieOptions);
 
   if (user.mfaEnabled) {
@@ -133,7 +141,7 @@ router.post('/mfa/verify', mfaLimiter, validate(mfaCodeSchema), async (req, res)
   }
 
   const user = await User.findById(payload.sub).select(MFA_FIELDS);
-  if (!user || !user.mfaEnabled) {
+  if (!user || !user.mfaEnabled || user.suspended) {
     return res.status(401).json({ error: 'La verificación expiró, ingresá de nuevo' });
   }
   req.auditUser = user;
@@ -158,10 +166,23 @@ router.post('/mfa/verify', mfaLimiter, validate(mfaCodeSchema), async (req, res)
   res.json({ user, mfa: true });
 });
 
-router.post('/mfa/setup', authenticate, async (req, res) => {
+// Verifica la contraseña del usuario de la sesión; si falla, responde 400 y devuelve false
+async function checkPassword(req, res, password) {
+  const withHash = await User.findById(req.user._id).select('+passwordHash');
+  if (withHash && (await argon2.verify(withHash.passwordHash, password))) return true;
+  req.log.warn({ userId: String(req.user._id) }, 'contraseña incorrecta en una operación sensible');
+  res.status(400).json({
+    error: 'Datos inválidos',
+    details: [{ field: 'password', message: 'La contraseña no es correcta' }],
+  });
+  return false;
+}
+
+router.post('/mfa/setup', authenticate, passwordLimiter, validate(mfaSetupSchema), async (req, res) => {
   if (req.user.mfaEnabled) {
     return res.status(409).json({ error: 'El MFA ya está activo' });
   }
+  if (!(await checkPassword(req, res, req.body.password))) return;
   const secret = generateSecret();
   await User.updateOne({ _id: req.user._id }, { $set: { mfaSecretEnc: encrypt(secret) } });
   const qr = await QRCode.toDataURL(otpauthUri(req.user.email, secret), { margin: 1, width: 220 });
@@ -196,6 +217,41 @@ router.post('/logout', async (req, res) => {
   res.clearCookie(COOKIE_NAME, cookieOptions);
   res.clearCookie(MFA_COOKIE_NAME, mfaCookieOptions);
   res.json({ ok: true });
+});
+
+// Desactivar el MFA: contraseña y código vigente. El admin no puede, porque para él es obligatorio.
+// Revoca las demás sesiones, porque cambia la forma de autenticarse.
+router.post('/mfa/disable', authenticate, passwordLimiter, validate(mfaDisableSchema), async (req, res) => {
+  if (!req.user.mfaEnabled) {
+    return res.status(409).json({ error: 'El MFA no está activo' });
+  }
+  if (req.user.role === 'admin') {
+    return res.status(403).json({ error: 'El MFA es obligatorio para el administrador' });
+  }
+  if (!(await checkPassword(req, res, req.body.password))) return;
+
+  const user = await User.findById(req.user._id).select(MFA_FIELDS);
+  if (!(await checkTotp(user, req.body.code))) {
+    req.log.warn({ userId: String(user._id) }, 'desactivacion mfa con codigo invalido');
+    return res.status(400).json({
+      error: 'Datos inválidos',
+      details: [{ field: 'code', message: 'El código no es válido' }],
+    });
+  }
+
+  const updated = await User.findByIdAndUpdate(
+    user._id,
+    {
+      $set: { mfaEnabled: false, mfaFailCount: 0 },
+      $unset: { mfaSecretEnc: 1, mfaLastCode: 1, mfaLastCodeAt: 1, mfaLockUntil: 1 },
+      $inc: { tokenVersion: 1 },
+    },
+    { returnDocument: 'after' }
+  );
+
+  req.log.info({ userId: String(user._id) }, 'mfa desactivado; sesiones anteriores revocadas');
+  res.cookie(COOKIE_NAME, signToken(updated, { mfa: false }), cookieOptions);
+  res.json({ user: updated });
 });
 
 // Cambio de contraseña: exige la actual, aplica la misma política que el registro y revoca todas

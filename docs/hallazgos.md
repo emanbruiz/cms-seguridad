@@ -245,4 +245,53 @@ Controles implementados:
 
 Pruebas nuevas en `pentest/caja-gris.ps1` (grupo C): C-01 sin sesión (401), C-02 contraseña actual incorrecta (400), C-03 contraseña común (400), C-04 campo extra `userId` (400), C-05 cambio válido (200), C-06 la sesión actual sigue activa (200), C-07 otra sesión anterior queda revocada (401), C-08 la contraseña anterior ya no sirve (401), C-09 cerrar todas las sesiones (200) y C-10 ningún token anterior vale después (dos 401).
 
-Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-cuentas.txt`.
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-cuentas.txt` (51 de 51 en OK).
+
+## Mejora v1.2, paso 2: MFA con reautenticación y desactivación verificada
+
+Motivo: activar el MFA solo exigía una sesión. Quien robara la sesión de un usuario sin MFA podía enrolar su propio autenticador y dejar fuera al titular. Además no existía forma de desactivarlo sin tocar la base de datos.
+
+Amenazas consideradas con STRIDE:
+
+- Suplantación: enrolar un autenticador ajeno con una sesión robada. Control: activar el MFA exige la contraseña actual.
+- Suplantación y denegación de servicio: desactivar el MFA de la víctima para debilitar su cuenta. Control: exige contraseña y un código vigente de la app; el código no se puede reutilizar durante 90 segundos.
+- Elevación de privilegios: dejar al administrador sin segundo factor. Control: el administrador no puede desactivar el MFA (403).
+- Suplantación: fuerza bruta de la contraseña desde una sesión robada. Control: el mismo límite por usuario del cambio de contraseña (5 fallos cada 15 minutos) protege ambas rutas.
+- Repudio: activar y desactivar el MFA queda en la auditoría y en el registro de la API.
+
+Controles implementados:
+
+- `POST /api/auth/mfa/setup`: ahora exige `{ password }`, con esquema estricto y límite por usuario.
+- `POST /api/auth/mfa/disable`: exige `{ password, code }`; rechaza al administrador; borra la semilla cifrada y los datos de bloqueo; incrementa `tokenVersion`, lo que cierra las demás sesiones, y entrega un token nuevo a la sesión actual.
+- Página Seguridad: pide la contraseña antes de mostrar el código QR y agrega el formulario para desactivar el MFA, que no aparece para el administrador.
+
+Pruebas nuevas en `pentest/caja-gris.ps1` (grupo M), con un usuario de prueba y códigos TOTP calculados por el propio script según RFC 6238: M-01 activar sin contraseña (400), M-02 con contraseña incorrecta (400), M-03 con la correcta (200), M-04 confirmar con el código de la app (200), M-05 desactivar con código incorrecto (400), M-06 desactivar con contraseña incorrecta (400), M-07 desactivar con contraseña y código vigente (200) y M-08 la cuenta queda sin MFA. La restricción del administrador se verifica a mano, porque el script no usa la cuenta de administrador.
+
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-mfa.txt` (59 de 59 en OK).
+
+Falso positivo de Gitleaks: al subir el paso 1, el pipeline marcó como posible secreto una contraseña incorrecta escrita a propósito en la prueba C-02 (regla `generic-api-key`). No es un secreto: es el valor que la prueba usa para comprobar el rechazo. Se registró su huella en `.gitleaksignore`, igual que el H-10, y el script ahora genera esa contraseña al azar en cada corrida para que no vuelva a aparecer.
+
+## Mejora v1.2, paso 3: suspensión de cuentas y cierre de sesiones por el administrador
+
+Motivo: ante una cuenta comprometida, el plan de respuesta a incidentes dependía de editar la base de datos a mano (incrementar `tokenVersion`) o de bajar el rol con `set-role.js`. No había forma de suspender una cuenta.
+
+Amenazas consideradas con STRIDE:
+
+- Elevación de privilegios: un editor o lector suspende cuentas o cierra sesiones ajenas. Control: solo el administrador con MFA verificado (`authorize('admin')`).
+- Denegación de servicio: un administrador comprometido suspende a los demás administradores. Control: no se puede suspender a otro administrador sin cambiarle antes el rol, ni a uno mismo.
+- Divulgación de información: el inicio de sesión revela que una cuenta está suspendida. Control: la cuenta suspendida recibe el mismo 401 que unas credenciales inválidas.
+- Suplantación: una sesión abierta antes de la suspensión sigue funcionando. Control: suspender incrementa `tokenVersion` y, además, `authenticate` rechaza toda sesión de una cuenta suspendida.
+- Repudio: cada suspensión, reactivación y cierre de sesiones queda en la auditoría (con el administrador que lo hizo) y en el registro de la API.
+
+Controles implementados:
+
+- Campo `suspended` en el usuario. `authenticate`, el inicio de sesión y la verificación de MFA rechazan las cuentas suspendidas.
+- `PATCH /api/users/:id/status` con `{ suspended }`: solo admin con MFA, ID validado, esquema estricto; no sobre uno mismo ni sobre otro admin; suspender revoca todas las sesiones.
+- `POST /api/users/:id/revoke-sessions`: solo admin con MFA; cierra todas las sesiones de otro usuario.
+- Página Usuarios: columna de estado y botones para suspender, reactivar y cerrar sesiones, con confirmación.
+
+Con esto, los escenarios "Fuerza bruta o robo de cuenta" y "Escalada de privilegios" del plan de respuesta a incidentes ya no requieren cambios manuales en la base para cerrar sesiones ni para bloquear una cuenta.
+
+Pruebas nuevas en `pentest/caja-gris.ps1` (grupo X). Siempre se ejecutan: X-01 un editor intenta suspender (403), X-02 un lector intenta cerrar sesiones ajenas (403) y X-03 sin sesión (401). Con una cuenta admin de pruebas con MFA (parámetros `-AdminCorreo`, `-AdminClave` y `-AdminSemilla`, o sus variables de entorno, que nunca se guardan en el repositorio) se ejecutan además: X-04 el admin no puede suspenderse (400), X-05 campos extra (400), X-06 suspender (200), X-07 la sesión abierta deja de valer (401), X-08 el inicio de sesión de la cuenta suspendida da el mismo error que unas credenciales inválidas, X-09 reactivar (200), X-10 la cuenta reactivada inicia sesión (200), X-11 cerrar sus sesiones (200) y X-12 el token anterior deja de valer (401). Con esto, el script también automatiza pruebas del rol administrador con MFA, que antes solo se verificaban a mano (recomendación 9 del informe).
+
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-admin.txt`.
