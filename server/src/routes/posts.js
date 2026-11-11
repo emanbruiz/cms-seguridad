@@ -1,13 +1,17 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import { Post } from '../models/Post.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { validId, validSlug } from '../middleware/params.js';
-import { createPostSchema, updatePostSchema } from '../validators/post.js';
+import { createPostSchema, updatePostSchema, searchSchema, emptyBodySchema } from '../validators/post.js';
 import { slugify, randomSuffix } from '../utils/slug.js';
 
 const router = Router();
-const RESERVED_SLUGS = ['manage'];
+const RESERVED_SLUGS = ['manage', 'trash'];
+const NOT_DELETED = { deletedAt: null };
+// sanitizeFilter envuelve los operadores; trusted() marca este como propio, no del usuario
+const inTrash = () => ({ deletedAt: mongoose.trusted({ $ne: null }) });
 const canWrite = [authenticate, authorize('editor', 'admin')];
 
 function pageParams(query) {
@@ -22,8 +26,10 @@ async function uniqueSlug(title) {
   return taken ? `${base}-${randomSuffix()}` : base;
 }
 
-async function loadPostFor(req, res) {
-  const post = await Post.findById(req.params.id);
+// Carga un post y verifica que sea del usuario (o que sea admin).
+// Por defecto ignora los que están en la papelera; con { trash: true } busca solo en la papelera.
+async function loadPostFor(req, res, { trash = false } = {}) {
+  const post = await Post.findOne({ _id: req.params.id, ...(trash ? inTrash() : NOT_DELETED) });
   if (!post) {
     res.status(404).json({ error: 'Post no encontrado' });
     return null;
@@ -40,10 +46,19 @@ async function loadPostFor(req, res) {
   return post;
 }
 
-// Público: solo posts publicados
+// Público: solo posts publicados y fuera de la papelera. Admite búsqueda con ?q=
 router.get('/', async (req, res) => {
   const { page, limit } = pageParams(req.query);
-  const filter = { status: 'publicado' };
+  const filter = { status: 'publicado', ...NOT_DELETED };
+
+  if (req.query.q !== undefined) {
+    const result = searchSchema.safeParse(req.query.q);
+    if (!result.success) {
+      return res.status(400).json({ error: 'Búsqueda inválida', details: [{ field: 'q', message: result.error.issues[0].message }] });
+    }
+    filter.$text = mongoose.trusted({ $search: result.data });
+  }
+
   const [posts, total] = await Promise.all([
     Post.find(filter)
       .select('-content')
@@ -59,12 +74,29 @@ router.get('/', async (req, res) => {
 // Editor: sus posts. Admin: todos. Incluye borradores.
 router.get('/manage', ...canWrite, async (req, res) => {
   const { page, limit } = pageParams(req.query);
-  const filter = req.user.role === 'admin' ? {} : { author: req.user._id };
+  const filter = req.user.role === 'admin' ? { ...NOT_DELETED } : { author: req.user._id, ...NOT_DELETED };
   const [posts, total] = await Promise.all([
     Post.find(filter)
       .select('-content')
       .populate('author', 'name')
       .sort({ updatedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit),
+    Post.countDocuments(filter),
+  ]);
+  res.json({ posts, page, limit, total });
+});
+
+// Papelera: el editor ve lo suyo, el admin todo
+router.get('/trash', ...canWrite, async (req, res) => {
+  const { page, limit } = pageParams(req.query);
+  const filter = req.user.role === 'admin' ? inTrash() : { author: req.user._id, ...inTrash() };
+  const [posts, total] = await Promise.all([
+    Post.find(filter)
+      .select('-content')
+      .populate('author', 'name')
+      .populate('deletedBy', 'name')
+      .sort({ deletedAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit),
     Post.countDocuments(filter),
@@ -79,7 +111,7 @@ router.get('/manage/:id', ...canWrite, validId, async (req, res) => {
 });
 
 router.get('/:slug', validSlug, async (req, res) => {
-  const post = await Post.findOne({ slug: req.params.slug, status: 'publicado' }).populate('author', 'name');
+  const post = await Post.findOne({ slug: req.params.slug, status: 'publicado', ...NOT_DELETED }).populate('author', 'name');
   if (!post) return res.status(404).json({ error: 'Post no encontrado' });
   res.json({ post });
 });
@@ -120,11 +152,35 @@ router.patch('/:id', ...canWrite, validId, validate(updatePostSchema), async (re
   res.json({ post });
 });
 
+// Borrar: envía el post a la papelera (borrado lógico) y deja de verse en el sitio público
 router.delete('/:id', ...canWrite, validId, async (req, res) => {
   const post = await loadPostFor(req, res);
   if (!post) return;
+  post.deletedAt = new Date();
+  post.deletedBy = req.user._id;
+  await post.save();
+  req.log.info({ userId: String(req.user._id), postId: String(post._id) }, 'post enviado a la papelera');
+  res.json({ ok: true });
+});
+
+// Restaurar desde la papelera. Vuelve como borrador: no se republica sin revisarlo.
+router.post('/:id/restore', ...canWrite, validId, validate(emptyBodySchema), async (req, res) => {
+  const post = await loadPostFor(req, res, { trash: true });
+  if (!post) return;
+  post.deletedAt = null;
+  post.deletedBy = null;
+  post.status = 'borrador';
+  await post.save();
+  req.log.info({ userId: String(req.user._id), postId: String(post._id) }, 'post restaurado de la papelera');
+  res.json({ post });
+});
+
+// Borrado definitivo: solo desde la papelera
+router.delete('/:id/permanent', ...canWrite, validId, async (req, res) => {
+  const post = await loadPostFor(req, res, { trash: true });
+  if (!post) return;
   await post.deleteOne();
-  req.log.info({ userId: String(req.user._id), postId: String(post._id) }, 'post eliminado');
+  req.log.info({ userId: String(req.user._id), postId: String(post._id) }, 'post eliminado definitivamente');
   res.json({ ok: true });
 });
 

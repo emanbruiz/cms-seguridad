@@ -9,6 +9,7 @@ import Dashboard from './pages/admin/Dashboard.jsx';
 import PostForm from './pages/admin/PostForm.jsx';
 import Users from './pages/admin/Users.jsx';
 import AuditLog from './pages/admin/AuditLog.jsx';
+import Trash from './pages/admin/Trash.jsx';
 import Security from './pages/Security.jsx';
 
 const STAFF = ['editor', 'admin'];
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/admin" element={<RequireRole roles={STAFF}><Dashboard /></RequireRole>} />
           <Route path="/admin/posts/new" element={<RequireRole roles={STAFF}><PostForm /></RequireRole>} />
           <Route path="/admin/posts/:id/edit" element={<RequireRole roles={STAFF}><PostForm /></RequireRole>} />
+          <Route path="/admin/trash" element={<RequireRole roles={STAFF}><Trash /></RequireRole>} />
           <Route path="/admin/users" element={<RequireRole roles={['admin']}><Users /></RequireRole>} />
           <Route path="/admin/audit" element={<RequireRole roles={['admin']}><AuditLog /></RequireRole>} />
           <Route path="/security" element={<RequireRole roles={ALL_ROLES} allowWithoutMfa><Security /></RequireRole>} />

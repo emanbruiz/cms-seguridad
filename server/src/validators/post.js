@@ -17,3 +17,9 @@ export const updatePostSchema = z
     status: status.optional(),
   })
   .refine((data) => Object.keys(data).length > 0, { message: 'Enviá al menos un campo' });
+
+// Búsqueda pública: texto corto, sin estructura (se usa con el índice de texto, no con regex)
+export const searchSchema = z.string().trim().min(2, 'Escribí al menos 2 caracteres').max(100, 'Búsqueda demasiado larga');
+
+// Rutas sin cuerpo
+export const emptyBodySchema = z.strictObject({}).optional();
