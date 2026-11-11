@@ -20,11 +20,24 @@ export default function Post() {
   return (
     <article className="rounded border border-slate-200 bg-white p-6">
       <Link to="/" className="text-sm text-blue-700 hover:underline">← Volver</Link>
-      <h1 className="mt-2 text-3xl font-bold">{post.title}</h1>
+      {post.featuredImage?.filename && (
+        <img src={`/api/media/${post.featuredImage.filename}`} alt="" className="mt-3 max-h-80 w-full rounded object-cover" />
+      )}
+      <Link to={`/?category=${encodeURIComponent(post.category || 'General')}`} className="mt-3 block text-xs font-semibold uppercase tracking-wide text-blue-700 hover:underline">
+        {post.category || 'General'}
+      </Link>
+      <h1 className="mt-1 text-3xl font-bold">{post.title}</h1>
       <p className="mb-4 text-sm text-slate-500">
-        {post.author?.name} · {new Date(post.publishedAt).toLocaleDateString('es-GT')}
+        {post.author?.name} · {new Date(post.publishedAt).toLocaleDateString('es-GT')} · {post.readingMinutes || 1} min de lectura
       </p>
       <MarkdownView>{post.content}</MarkdownView>
+      {post.tags?.length > 0 && (
+        <div className="mt-6 flex flex-wrap gap-2">
+          {post.tags.map((t) => (
+            <Link key={t} to={`/?tag=${encodeURIComponent(t)}`} className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-200">#{t}</Link>
+          ))}
+        </div>
+      )}
     </article>
   );
 }
