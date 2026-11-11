@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useUI } from '../components/ui.jsx';
 
 // Muestra el detalle de validación del servidor cuando lo hay (por ejemplo, contraseña común)
 function mensajeDe(err) {
@@ -9,9 +10,9 @@ function mensajeDe(err) {
   return err.message;
 }
 
-const inputClass = 'w-full rounded border border-slate-300 p-2';
-const buttonClass = 'rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50';
-const cardClass = 'space-y-3 rounded border border-slate-200 bg-white p-4';
+const inputClass = 'input mt-1';
+const buttonClass = 'btn btn-primary';
+const cardClass = 'card space-y-4 p-6';
 
 function CambioContrasena() {
   const [actual, setActual] = useState('');
@@ -45,23 +46,23 @@ function CambioContrasena() {
 
   return (
     <div className={cardClass}>
-      <h2 className="text-lg font-semibold">Contraseña</h2>
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Contraseña</h2>
       {ok && (
-        <p className="rounded bg-green-100 p-3 text-green-800">
+        <p className="alert-success">
           Contraseña actualizada. Cerramos tus sesiones en otros dispositivos.
         </p>
       )}
       {error && <p className="text-red-600">{error}</p>}
       <form onSubmit={enviar} className="space-y-3">
-        <label className="block text-sm">
+        <label className="label">
           Contraseña actual
           <input type="password" className={inputClass} autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} required maxLength={128} />
         </label>
-        <label className="block text-sm">
+        <label className="label">
           Nueva contraseña (mínimo 15 caracteres)
           <input type="password" className={inputClass} autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} required minLength={15} maxLength={128} />
         </label>
-        <label className="block text-sm">
+        <label className="label">
           Confirmá la nueva contraseña
           <input type="password" className={inputClass} autoComplete="new-password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} required minLength={15} maxLength={128} />
         </label>
@@ -140,7 +141,7 @@ function Mfa() {
     <input className={inputClass} inputMode="numeric" autoComplete="one-time-code" placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} required minLength={6} maxLength={6} />
   );
   const campoPassword = (
-    <label className="block text-sm">
+    <label className="label">
       Contraseña actual
       <input type="password" className={inputClass} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required maxLength={128} />
     </label>
@@ -197,8 +198,8 @@ function Mfa() {
 
   return (
     <div className={cardClass}>
-      <h2 className="text-lg font-semibold">Verificación en dos pasos (MFA)</h2>
-      {aviso && <p className="rounded bg-green-100 p-3 text-green-800">{aviso}</p>}
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Verificación en dos pasos (MFA)</h2>
+      {aviso && <p className="alert-success">{aviso}</p>}
       {error && <p className="text-red-600">{error}</p>}
       {contenido}
     </div>
@@ -207,12 +208,19 @@ function Mfa() {
 
 function Sesiones() {
   const { logoutAll } = useAuth();
+  const { confirm } = useUI();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   const cerrarTodas = async () => {
-    if (!window.confirm('Se cerrará tu sesión en todos los dispositivos, incluido este. ¿Continuar?')) return;
+    const ok = await confirm({
+      title: 'Cerrar todas las sesiones',
+      message: 'Se cerrará tu sesión en todos los dispositivos, incluido este. Vas a tener que volver a ingresar.',
+      confirmText: 'Cerrar sesiones',
+      danger: true,
+    });
+    if (!ok) return;
     setError('');
     setBusy(true);
     try {
@@ -226,13 +234,13 @@ function Sesiones() {
 
   return (
     <div className={cardClass}>
-      <h2 className="text-lg font-semibold">Sesiones</h2>
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Sesiones</h2>
       <p className="text-sm">
         Si perdiste un dispositivo o creés que alguien más entró a tu cuenta, cerrá todas las sesiones.
         Vas a tener que volver a ingresar.
       </p>
       {error && <p className="text-red-600">{error}</p>}
-      <button onClick={cerrarTodas} disabled={busy} className={buttonClass}>
+      <button onClick={cerrarTodas} disabled={busy} className="btn btn-danger">
         {busy ? 'Cerrando...' : 'Cerrar todas las sesiones'}
       </button>
     </div>
@@ -241,8 +249,11 @@ function Sesiones() {
 
 export default function Security() {
   return (
-    <section className="mx-auto max-w-md space-y-6">
-      <h1 className="text-2xl font-bold">Seguridad de la cuenta</h1>
+    <section className="mx-auto max-w-xl space-y-6">
+      <div>
+        <h1 className="page-title">Seguridad de la cuenta</h1>
+        <p className="mt-1 text-slate-500 dark:text-slate-400">Contraseña, verificación en dos pasos y sesiones abiertas.</p>
+      </div>
       <CambioContrasena />
       <Mfa />
       <Sesiones />

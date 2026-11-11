@@ -364,4 +364,18 @@ Controles implementados:
 
 Pruebas nuevas en `pentest/caja-gris.ps1` (grupo T): T-01 crear con todos los campos e imagen propia (201), T-02 imagen de otro usuario (403), T-03 categoría fuera de la lista (400), T-04 más de 8 etiquetas (400), T-05 etiqueta con símbolos (400), T-06 y T-07 filtros por categoría y etiqueta, T-08 la imagen se expone solo con su nombre de archivo, T-09 filtro con una categoría inexistente (400) y T-10 extracto automático. El grupo borra al final sus publicaciones e imágenes de prueba.
 
-Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-taxonomia.txt`.
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-taxonomia.txt` (103 de 103 en OK).
+
+## Mejora v1.3, paso 3: rediseño de la interfaz, modo oscuro y diálogos propios
+
+Motivo: la interfaz era funcional pero muy básica, y las confirmaciones usaban `window.confirm`, que muestra el diálogo del navegador con el texto "localhost:8443 dice", poco claro para el usuario.
+
+Cambios:
+
+- Diseño nuevo en todas las páginas: barra de navegación fija con enlace activo, tarjetas de publicaciones en cuadrícula con imagen, página de artículo con portada, formularios y tablas con estilos comunes (`card`, `btn`, `input`, `badge`), página 404 y pie de página.
+- Modo oscuro con un botón en la barra de navegación. La preferencia ("claro" u "oscuro") se guarda en `localStorage`; no se guarda ningún dato de sesión ni personal, de acuerdo con la regla de no usar `localStorage` para tokens.
+- Diálogo de confirmación propio (`role="alertdialog"`, foco en el botón principal, cierre con Escape) y avisos tipo toast con `aria-live`, en lugar de `window.confirm`. Las acciones destructivas usan el botón rojo.
+
+Seguridad: el rediseño no cambia la API ni las reglas de acceso. Se respetan la CSP y la cabecera COEP: no se cargan fuentes, íconos ni imágenes de otros orígenes (los íconos son SVG en línea y la fuente es la del sistema), ni se usan estilos o scripts en línea. Las 103 pruebas de caja gris se repitieron después del rediseño.
+
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-diseno.txt`.

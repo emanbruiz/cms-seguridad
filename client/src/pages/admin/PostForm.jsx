@@ -103,44 +103,44 @@ export default function PostForm() {
 
   if (loading) return <p>Cargando...</p>;
 
-  const input = 'w-full rounded border border-slate-300 p-2';
+  const input = 'input';
 
   return (
     <section>
-      <Link to="/admin" className="text-sm text-blue-700 hover:underline">← Volver al panel</Link>
-      <h1 className="mb-4 mt-2 text-2xl font-bold">{editing ? 'Editar post' : 'Nuevo post'}</h1>
+      <Link to="/admin" className="link text-sm">← Volver al panel</Link>
+      <h1 className="page-title mt-2 mb-6">{editing ? 'Editar post' : 'Nuevo post'}</h1>
 
       <form onSubmit={onSubmit} className="space-y-3">
         <input className={input} placeholder="Título" value={form.title} onChange={update('title')} required minLength={3} maxLength={150} />
         <textarea className={`${input} font-mono`} rows={12} placeholder="Contenido en Markdown" value={form.content} onChange={update('content')} required maxLength={20000} />
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm text-slate-600">
+          <label className="label">
             Categoría
             <select className={input} value={form.category} onChange={update('category')}>
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
-          <label className="block text-sm text-slate-600">
+          <label className="label">
             Etiquetas (separadas por comas, máximo 8)
             <input className={input} placeholder="seguridad, docker" value={form.tags} onChange={update('tags')} maxLength={300} />
           </label>
         </div>
-        <label className="block text-sm text-slate-600">
+        <label className="label">
           Extracto (opcional, si lo dejás vacío se genera del contenido)
           <textarea className={input} rows={2} value={form.excerpt} onChange={update('excerpt')} maxLength={300} />
         </label>
-        <div className="space-y-2 text-sm text-slate-600">
+        <div className="label">
           <p>Imagen destacada</p>
           {featured && (
             <div className="flex items-center gap-3">
               <img src={`/api/media/${featured.filename}`} alt="Imagen destacada" className="h-20 w-32 rounded object-cover" />
-              <button type="button" onClick={() => setFeatured(null)} className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-100">Quitar</button>
+              <button type="button" onClick={() => setFeatured(null)} className="btn btn-secondary btn-sm">Quitar</button>
             </div>
           )}
           <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onPickFeatured} disabled={uploadingFeatured} className="block" />
           {uploadingFeatured && <p>Subiendo imagen...</p>}
         </div>
-        <label className="block text-sm text-slate-600">
+        <label className="label">
           {uploading ? 'Subiendo imagen...' : 'Subir imagen (PNG, JPG o WEBP, máximo 2 MB)'}
           <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onPickImage} disabled={uploading} className="mt-1 block" />
         </label>
@@ -149,13 +149,13 @@ export default function PostForm() {
           <option value="publicado">Publicado</option>
         </select>
         {errors.map((m) => <p key={m} className="text-sm text-red-600">{m}</p>)}
-        <button disabled={busy} className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50">
+        <button disabled={busy} className="btn btn-primary">
           {busy ? 'Guardando...' : 'Guardar'}
         </button>
       </form>
 
-      <h2 className="mb-2 mt-8 text-lg font-semibold">Vista previa</h2>
-      <div className="rounded border border-slate-200 bg-white p-4">
+      <h2 className="mb-2 mt-8 text-lg font-semibold text-slate-900 dark:text-white">Vista previa</h2>
+      <div className="card p-6">
         <MarkdownView>{form.content || '*Nada que mostrar todavía*'}</MarkdownView>
       </div>
     </section>
