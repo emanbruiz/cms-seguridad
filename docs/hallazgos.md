@@ -340,6 +340,28 @@ Controles implementados:
 
 Pruebas nuevas en `pentest/caja-gris.ps1` (grupos B y P): B-01 la búsqueda encuentra un post publicado, B-02 un solo carácter (400), B-03 parámetro repetido (400), B-04 más de 100 caracteres (400), B-05 un patrón de regex se busca como texto; P-01 enviar a la papelera, P-02 ya no se ve en la ruta pública (404), P-03 tampoco en la búsqueda, P-04 otro editor no lo ve en su papelera, P-05 y P-06 otro editor no puede restaurarlo ni eliminarlo (403), P-07 un lector no accede a la papelera (403), P-08 no se puede editar desde la papelera (404), P-09 restaurar lo deja como borrador, P-10 y P-11 restaurar o eliminar definitivamente algo que no está en la papelera (404), P-12 eliminación definitiva (200) y P-13 ya no se puede restaurar (404). El grupo espera 61 segundos al inicio para no chocar con el límite general de 120 peticiones por minuto.
 
-Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-papelera.txt`.
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-papelera.txt` (93 de 93 en OK).
 
-Durante esta mejora, el pipeline bloque� el pull request por avisos nuevos de Mongoose (versiones 9.0.0 a 9.11.3, severidad alta), publicados despu�s de la versi�n anterior: sanitizeFilter no aplicado a nivel de conexi�n (GHSA-gg4r-jv3p-qx3c), contaminaci�n de prototipos y otros. El sistema activa sanitizeFilter de forma global y no por conexi�n, pero se actualiz� igual con npm audit fix y se repitieron las 93 pruebas de caja gris, todas en OK. Es el mismo proceso del hallazgo H-09 y muestra el valor del an�lisis continuo de dependencias.
+Durante esta mejora, el pipeline bloqueó el pull request por avisos nuevos de Mongoose (versiones 9.0.0 a 9.11.3, severidad alta), publicados después de la versión anterior: sanitizeFilter no aplicado a nivel de conexión (GHSA-gg4r-jv3p-qx3c), contaminación de prototipos y otros. El sistema activa sanitizeFilter de forma global y no por conexión, pero se actualizó igual con npm audit fix y se repitieron las 93 pruebas de caja gris, todas en OK. Es el mismo proceso del hallazgo H-09 y muestra el valor del análisis continuo de dependencias.
+
+## Mejora v1.3, paso 2: categorías, etiquetas, extracto e imagen destacada
+
+Motivo: organizar el contenido como en cualquier CMS (categorías y etiquetas para navegar, extracto y tiempo de lectura en las tarjetas) y permitir una imagen destacada por publicación.
+
+Amenazas consideradas con STRIDE:
+
+- Elevación de privilegios: usar como imagen destacada una imagen de otro usuario (BOLA sobre imágenes). Control: la imagen tiene que existir y pertenecer al autor del post; si no, 403.
+- Manipulación: inyectar contenido o estructuras en las categorías o etiquetas. Control: la categoría sale de una lista cerrada; cada etiqueta se valida con Zod (minúsculas, letras, números y guiones, de 2 a 30 caracteres, máximo 8 y sin duplicados). React muestra todo como texto.
+- Inyección NoSQL en los filtros públicos `?category=` y `?tag=`. Control: se validan con los mismos esquemas antes de usarse; un arreglo o un valor fuera de la lista da 400.
+- Divulgación de información: que la lista pública exponga datos internos de la imagen (dueño, tamaño). Control: la imagen se incluye solo con su nombre de archivo.
+
+Controles implementados:
+
+- Campos `category`, `tags`, `excerpt`, `readingMinutes` y `featuredImage` en la publicación. Si no se escribe un extracto, el servidor lo genera a partir del contenido, sin la sintaxis de Markdown. El tiempo de lectura se calcula en el servidor.
+- `GET /api/posts/meta`: categorías disponibles y etiquetas más usadas en lo publicado.
+- Filtros públicos `?category=` y `?tag=`, combinables con la búsqueda.
+- Formulario: categoría, etiquetas, extracto e imagen destacada con vista previa. Portada: tarjetas con imagen, categoría, extracto, tiempo de lectura y etiquetas, más filtros por categoría y etiqueta. Página del post: imagen, categoría y etiquetas.
+
+Pruebas nuevas en `pentest/caja-gris.ps1` (grupo T): T-01 crear con todos los campos e imagen propia (201), T-02 imagen de otro usuario (403), T-03 categoría fuera de la lista (400), T-04 más de 8 etiquetas (400), T-05 etiqueta con símbolos (400), T-06 y T-07 filtros por categoría y etiqueta, T-08 la imagen se expone solo con su nombre de archivo, T-09 filtro con una categoría inexistente (400) y T-10 extracto automático. El grupo borra al final sus publicaciones e imágenes de prueba.
+
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-taxonomia.txt`.

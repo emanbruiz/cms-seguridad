@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 
 export const STATUSES = ['borrador', 'publicado'];
+// Categorías cerradas: se eligen de una lista y no se escriben libremente
+export const CATEGORIES = ['General', 'Noticias', 'Tecnología', 'Seguridad', 'Tutoriales', 'Opinión'];
 
 const postSchema = new mongoose.Schema(
   {
@@ -10,6 +12,12 @@ const postSchema = new mongoose.Schema(
     status: { type: String, enum: STATUSES, default: 'borrador' },
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     publishedAt: { type: Date, default: null },
+    category: { type: String, enum: CATEGORIES, default: 'General', index: true },
+    tags: { type: [String], default: [], index: true },
+    excerpt: { type: String, maxlength: 300, default: '' },
+    readingMinutes: { type: Number, default: 1 },
+    // Imagen destacada: debe pertenecer al autor del post (se verifica en la ruta)
+    featuredImage: { type: mongoose.Schema.Types.ObjectId, ref: 'Media', default: null },
     // Papelera: borrado lógico. Se puede restaurar hasta que el índice TTL lo elimine a los 30 días.
     deletedAt: { type: Date, default: null },
     deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
