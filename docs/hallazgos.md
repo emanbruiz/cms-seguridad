@@ -378,4 +378,6 @@ Cambios:
 
 Seguridad: el rediseño no cambia la API ni las reglas de acceso. Se respetan la CSP y la cabecera COEP: no se cargan fuentes, íconos ni imágenes de otros orígenes (los íconos son SVG en línea y la fuente es la del sistema), ni se usan estilos o scripts en línea. Las 103 pruebas de caja gris se repitieron después del rediseño.
 
-Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-diseno.txt`.
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-diseno.txt` (103 de 103 en OK).
+
+Ajustes posteriores al rediseño: las tarjetas sin imagen destacada muestran un fondo con la inicial de la categoría, para que la cuadrícula se vea pareja; y se agregó `server/scripts/limpiar-pruebas.js`, que borra las cuentas que crea el script de caja gris en cada corrida (solo correos con el patrón de prueba, nunca cuentas admin y solo con `--confirmar`).
