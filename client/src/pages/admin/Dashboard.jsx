@@ -17,7 +17,7 @@ export default function Dashboard() {
   }, [page, tick]);
 
   const remove = async (post) => {
-    if (!window.confirm(`¿Borrar "${post.title}"?`)) return;
+    if (!window.confirm(`¿Enviar "${post.title}" a la papelera? Podrás restaurarlo durante 30 días.`)) return;
     setError('');
     try {
       await api(`/posts/${post._id}`, { method: 'DELETE' });
@@ -42,6 +42,7 @@ export default function Dashboard() {
               <Link to="/admin/audit" className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-100">Auditoría</Link>
             </>
           )}
+          <Link to="/admin/trash" className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-100">Papelera</Link>
           <Link to="/admin/posts/new" className="rounded bg-slate-900 px-3 py-1 text-white hover:bg-slate-700">Nuevo post</Link>
         </div>
       </div>
@@ -62,7 +63,7 @@ export default function Dashboard() {
               </div>
               <div className="flex gap-2 text-sm">
                 <Link to={`/admin/posts/${p._id}/edit`} className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-100">Editar</Link>
-                <button onClick={() => remove(p)} className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-500">Borrar</button>
+                <button onClick={() => remove(p)} className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-500">Enviar a la papelera</button>
               </div>
             </li>
           ))}

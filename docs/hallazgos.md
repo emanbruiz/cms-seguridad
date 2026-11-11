@@ -316,4 +316,28 @@ Controles implementados:
 
 Pruebas nuevas en `pentest/caja-gris.ps1`: S-11 contraseña de 14 caracteres en el registro (400); grupo L con un usuario de prueba: L-01 cinco contraseñas incorrectas seguidas (cinco 401), L-02 con la cuenta bloqueada hasta la contraseña correcta recibe 401 y L-03 la respuesta es idéntica a la de unas credenciales inválidas. A-01 ahora usa un correo inexistente, para medir solo el límite por IP sin bloquear cuentas reales. Los usuarios que crea el script usan una clave generada de más de 15 caracteres.
 
-Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-login.txt`.
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.2-login.txt` (75 de 75 en OK). Etiqueta: `v1.2-cuentas`.
+
+## Mejora v1.3, paso 1: papelera de publicaciones y búsqueda
+
+Motivo: borrar una publicación era definitivo, así que un error o una cuenta de editor comprometida podía destruir contenido sin forma de recuperarlo (riesgo T-25, pérdida de datos). Además, el sitio no tenía búsqueda, una función básica de cualquier CMS.
+
+Amenazas consideradas con STRIDE:
+
+- Manipulación y denegación de servicio: borrar contenido ajeno o propio sin vuelta atrás. Control: el borrado envía a una papelera; se puede restaurar durante 30 días.
+- Elevación de privilegios: ver, restaurar o eliminar definitivamente publicaciones ajenas desde la papelera. Control: el mismo control de propietario de siempre; el editor solo ve y gestiona lo suyo y el admin todo.
+- Divulgación de información: que lo enviado a la papelera siga visible en el sitio o en la búsqueda. Control: todas las consultas públicas excluyen la papelera.
+- Manipulación: que una publicación restaurada reaparezca publicada sin revisión. Control: al restaurarse vuelve como borrador.
+- Inyección y denegación de servicio en la búsqueda: inyección NoSQL o expresiones regulares costosas (ReDoS). Control: la búsqueda usa un índice de texto de MongoDB (`$text`), no expresiones regulares; el término se valida con Zod (texto de 2 a 100 caracteres; un arreglo se rechaza) y el operador lo arma el servidor con `mongoose.trusted`, sin datos del usuario como operador.
+- Repudio: enviar a la papelera, restaurar y eliminar definitivamente quedan en la auditoría y en el registro de la API, y la publicación guarda quién la envió a la papelera.
+
+Controles implementados:
+
+- Campos `deletedAt` y `deletedBy` en la publicación e índice TTL que la elimina en forma definitiva 30 días después de enviarla a la papelera.
+- `DELETE /api/posts/:id` envía a la papelera; `GET /api/posts/trash` la lista; `POST /api/posts/:id/restore` restaura como borrador; `DELETE /api/posts/:id/permanent` elimina definitivamente, solo desde la papelera.
+- `GET /api/posts?q=` busca en título y contenido de las publicaciones publicadas, con índice de texto en español y mayor peso para el título.
+- Panel: botón Papelera y página nueva con restaurar, eliminar definitivamente y los días que faltan para el borrado automático. Portada: buscador.
+
+Pruebas nuevas en `pentest/caja-gris.ps1` (grupos B y P): B-01 la búsqueda encuentra un post publicado, B-02 un solo carácter (400), B-03 parámetro repetido (400), B-04 más de 100 caracteres (400), B-05 un patrón de regex se busca como texto; P-01 enviar a la papelera, P-02 ya no se ve en la ruta pública (404), P-03 tampoco en la búsqueda, P-04 otro editor no lo ve en su papelera, P-05 y P-06 otro editor no puede restaurarlo ni eliminarlo (403), P-07 un lector no accede a la papelera (403), P-08 no se puede editar desde la papelera (404), P-09 restaurar lo deja como borrador, P-10 y P-11 restaurar o eliminar definitivamente algo que no está en la papelera (404), P-12 eliminación definitiva (200) y P-13 ya no se puede restaurar (404). El grupo espera 61 segundos al inicio para no chocar con el límite general de 120 peticiones por minuto.
+
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-papelera.txt`.
