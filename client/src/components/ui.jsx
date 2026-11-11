@@ -78,4 +78,5 @@ export function UIProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useUI = () => useContext(UIContext);

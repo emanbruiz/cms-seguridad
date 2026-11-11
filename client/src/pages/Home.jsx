@@ -112,8 +112,12 @@ export default function Home() {
         <ul className="grid gap-6 sm:grid-cols-2">
           {data.posts.map((p) => (
             <li key={p._id} className="card group flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
-              {p.featuredImage?.filename && (
+              {p.featuredImage?.filename ? (
                 <img src={`/api/media/${p.featuredImage.filename}`} alt="" className="aspect-video w-full object-cover" />
+              ) : (
+                <div aria-hidden="true" className="grid aspect-video w-full place-items-center bg-linear-to-br from-indigo-500/15 via-violet-500/10 to-sky-500/15">
+                  <span className="text-5xl font-bold text-indigo-500/40">{(p.category || 'General').charAt(0)}</span>
+                </div>
               )}
               <div className="flex flex-1 flex-col gap-2 p-5">
                 <button onClick={() => filtrar('category', p.category)} className="self-start text-xs font-semibold tracking-wide text-indigo-600 uppercase hover:underline dark:text-indigo-400">
