@@ -15,29 +15,31 @@ export default function Post() {
   }, [slug]);
 
   if (error) return <p className="text-red-600">{error}</p>;
-  if (!post) return <p>Cargando...</p>;
+  if (!post) return <p className="muted">Cargando...</p>;
 
   return (
-    <article className="rounded border border-slate-200 bg-white p-6">
-      <Link to="/" className="text-sm text-blue-700 hover:underline">← Volver</Link>
+    <article className="card mx-auto max-w-3xl overflow-hidden">
       {post.featuredImage?.filename && (
-        <img src={`/api/media/${post.featuredImage.filename}`} alt="" className="mt-3 max-h-80 w-full rounded object-cover" />
+        <img src={`/api/media/${post.featuredImage.filename}`} alt="" className="aspect-[21/9] w-full object-cover" />
       )}
-      <Link to={`/?category=${encodeURIComponent(post.category || 'General')}`} className="mt-3 block text-xs font-semibold uppercase tracking-wide text-blue-700 hover:underline">
+      <div className="p-6 sm:p-10">
+      <Link to="/" className="link text-sm">← Volver</Link>
+      <Link to={`/?category=${encodeURIComponent(post.category || 'General')}`} className="mt-6 block text-xs font-semibold tracking-wide text-indigo-600 uppercase hover:underline dark:text-indigo-400">
         {post.category || 'General'}
       </Link>
-      <h1 className="mt-1 text-3xl font-bold">{post.title}</h1>
-      <p className="mb-4 text-sm text-slate-500">
+      <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">{post.title}</h1>
+      <p className="muted mt-3 mb-8">
         {post.author?.name} · {new Date(post.publishedAt).toLocaleDateString('es-GT')} · {post.readingMinutes || 1} min de lectura
       </p>
       <MarkdownView>{post.content}</MarkdownView>
       {post.tags?.length > 0 && (
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mt-10 flex flex-wrap gap-2 border-t border-slate-200 pt-6 dark:border-slate-800">
           {post.tags.map((t) => (
-            <Link key={t} to={`/?tag=${encodeURIComponent(t)}`} className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-200">#{t}</Link>
+            <Link key={t} to={`/?tag=${encodeURIComponent(t)}`} className="badge badge-slate hover:bg-slate-200 dark:hover:bg-slate-700">#{t}</Link>
           ))}
         </div>
       )}
+      </div>
     </article>
   );
 }

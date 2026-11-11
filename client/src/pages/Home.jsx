@@ -58,7 +58,10 @@ export default function Home() {
 
   return (
     <section>
-      <h1 className="mb-4 text-2xl font-bold">Publicaciones</h1>
+      <div className="mb-8">
+        <h1 className="page-title">Publicaciones</h1>
+        <p className="mt-1 text-slate-500 dark:text-slate-400">Noticias, tutoriales y artículos del equipo.</p>
+      </div>
 
       <form onSubmit={buscar} role="search" className="mb-4 flex gap-2">
         <input
@@ -69,17 +72,17 @@ export default function Home() {
           onChange={(e) => setTexto(e.target.value)}
           minLength={2}
           maxLength={100}
-          className="w-full rounded border border-slate-300 p-2"
+          className="input"
         />
-        <button className="rounded bg-slate-900 px-4 py-2 text-white">Buscar</button>
+        <button className="btn btn-primary">Buscar</button>
       </form>
 
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <button onClick={() => filtrar('category', '')} className={`rounded-full border px-3 py-1 ${!categoria ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 hover:bg-slate-100'}`}>
+        <button onClick={() => filtrar('category', '')} className={`rounded-full border px-3 py-1 ${!categoria ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'}`}>
           Todas
         </button>
         {meta.categories.map((c) => (
-          <button key={c} onClick={() => filtrar('category', c)} className={`rounded-full border px-3 py-1 ${categoria === c ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 hover:bg-slate-100'}`}>
+          <button key={c} onClick={() => filtrar('category', c)} className={`rounded-full border px-3 py-1 ${categoria === c ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'}`}>
             {c}
           </button>
         ))}
@@ -100,33 +103,33 @@ export default function Home() {
       )}
 
       {error && <p className="text-red-600">{error}</p>}
-      {!data && !error && <p>Cargando...</p>}
+      {!data && !error && <p className="muted">Cargando...</p>}
       {data && data.posts.length === 0 && (
-        <p>{q ? 'No se encontraron publicaciones con esa búsqueda.' : 'Todavía no hay publicaciones.'}</p>
+        <div className="card p-10 text-center text-slate-500">{q ? 'No se encontraron publicaciones con esa búsqueda.' : 'Todavía no hay publicaciones.'}</div>
       )}
 
       {data && (
-        <ul className="space-y-3">
+        <ul className="grid gap-6 sm:grid-cols-2">
           {data.posts.map((p) => (
-            <li key={p._id} className="overflow-hidden rounded border border-slate-200 bg-white">
+            <li key={p._id} className="card group flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
               {p.featuredImage?.filename && (
-                <img src={`/api/media/${p.featuredImage.filename}`} alt="" className="h-48 w-full object-cover" />
+                <img src={`/api/media/${p.featuredImage.filename}`} alt="" className="aspect-video w-full object-cover" />
               )}
-              <div className="space-y-2 p-4">
-                <button onClick={() => filtrar('category', p.category)} className="text-xs font-semibold uppercase tracking-wide text-blue-700 hover:underline">
+              <div className="flex flex-1 flex-col gap-2 p-5">
+                <button onClick={() => filtrar('category', p.category)} className="self-start text-xs font-semibold tracking-wide text-indigo-600 uppercase hover:underline dark:text-indigo-400">
                   {p.category || 'General'}
                 </button>
-                <Link to={`/posts/${p.slug}`} className="block text-lg font-semibold text-slate-900 hover:underline">
+                <Link to={`/posts/${p.slug}`} className="text-lg leading-snug font-semibold text-slate-900 group-hover:text-indigo-600 dark:text-white">
                   {p.title}
                 </Link>
-                {p.excerpt && <p className="text-sm text-slate-600">{p.excerpt}</p>}
-                <p className="text-sm text-slate-500">
+                {p.excerpt && <p className="line-clamp-3 text-sm text-slate-600 dark:text-slate-300">{p.excerpt}</p>}
+                <p className="muted mt-auto pt-2">
                   {p.author?.name} · {new Date(p.publishedAt).toLocaleDateString('es-GT')} · {p.readingMinutes || 1} min de lectura
                 </p>
                 {p.tags?.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {p.tags.map((t) => (
-                      <button key={t} onClick={() => filtrar('tag', t)} className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-200">#{t}</button>
+                      <button key={t} onClick={() => filtrar('tag', t)} className="badge badge-slate hover:bg-slate-200 dark:hover:bg-slate-700">#{t}</button>
                     ))}
                   </div>
                 )}

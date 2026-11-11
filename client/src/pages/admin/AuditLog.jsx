@@ -18,8 +18,8 @@ export default function AuditLog() {
 
   return (
     <section>
-      <Link to="/admin" className="text-sm text-blue-700 hover:underline">← Volver al panel</Link>
-      <h1 className="mb-4 mt-2 text-2xl font-bold">Auditoría</h1>
+      <Link to="/admin" className="link text-sm">← Volver al panel</Link>
+      <h1 className="page-title mt-2 mb-6">Auditoría</h1>
 
       <label className="mb-3 flex items-center gap-2 text-sm">
         <input
@@ -37,9 +37,9 @@ export default function AuditLog() {
       {!data && !error && <p>Cargando...</p>}
 
       {data && (
-        <div className="overflow-x-auto rounded border border-slate-200 bg-white">
+        <div className="card overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-slate-200 bg-slate-100">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs tracking-wide text-slate-500 uppercase dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
               <tr>
                 <th className="p-2">Fecha</th>
                 <th className="p-2">Usuario</th>
@@ -50,7 +50,7 @@ export default function AuditLog() {
             </thead>
             <tbody>
               {data.logs.map((l) => (
-                <tr key={l._id} className="border-b border-slate-100">
+                <tr key={l._id} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
                   <td className="whitespace-nowrap p-2">{new Date(l.createdAt).toLocaleString('es-GT')}</td>
                   <td className="p-2">{l.email || '—'}</td>
                   <td className="p-2 font-mono">{l.action}</td>
@@ -65,9 +65,9 @@ export default function AuditLog() {
 
       {data && pages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="rounded border px-3 py-1 disabled:opacity-40">Anterior</button>
+          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="btn btn-secondary btn-sm">Anterior</button>
           <span>Página {data.page} de {pages} ({data.total} registros)</span>
-          <button disabled={page >= pages} onClick={() => setPage(page + 1)} className="rounded border px-3 py-1 disabled:opacity-40">Siguiente</button>
+          <button disabled={page >= pages} onClick={() => setPage(page + 1)} className="btn btn-secondary btn-sm">Siguiente</button>
         </div>
       )}
     </section>

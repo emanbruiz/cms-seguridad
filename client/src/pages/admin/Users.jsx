@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { api } from '../../api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useUI } from '../../components/ui.jsx';
 
 const ROLES = ['admin', 'editor', 'lector'];
-const botonClass = 'rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100 disabled:opacity-40';
+const botonClass = 'btn btn-secondary btn-sm';
 
 export default function Users() {
   const { user: me } = useAuth();
+  const { confirm, toast } = useUI();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
-  const [aviso, setAviso] = useState('');
 
   useEffect(() => {
     api('/users?page=1&limit=50')
@@ -23,7 +24,6 @@ export default function Users() {
 
   const changeRole = async (u, role) => {
     setError('');
-    setAviso('');
     try {
       const { user: updated } = await api(`/users/${u._id}/role`, { method: 'PATCH', body: { role } });
       reemplazar(updated);
@@ -34,28 +34,39 @@ export default function Users() {
 
   const cambiarEstado = async (u) => {
     const suspender = !u.suspended;
-    const pregunta = suspender
-      ? `¿Suspender la cuenta de ${u.name}? Se cerrarán todas sus sesiones y no podrá ingresar.`
-      : `¿Reactivar la cuenta de ${u.name}?`;
-    if (!window.confirm(pregunta)) return;
+    const ok = await confirm(
+      suspender
+        ? {
+            title: 'Suspender cuenta',
+            message: `Se cerrarán todas las sesiones de ${u.name} y no podrá ingresar hasta que la reactives.`,
+            confirmText: 'Suspender',
+            danger: true,
+          }
+        : { title: 'Reactivar cuenta', message: `${u.name} podrá volver a ingresar.`, confirmText: 'Reactivar' }
+    );
+    if (!ok) return;
     setError('');
-    setAviso('');
     try {
       const { user: updated } = await api(`/users/${u._id}/status`, { method: 'PATCH', body: { suspended: suspender } });
       reemplazar(updated);
-      setAviso(suspender ? `Cuenta de ${u.name} suspendida.` : `Cuenta de ${u.name} reactivada.`);
+      toast(suspender ? `Cuenta de ${u.name} suspendida.` : `Cuenta de ${u.name} reactivada.`);
     } catch (err) {
       setError(err.message);
     }
   };
 
   const cerrarSesiones = async (u) => {
-    if (!window.confirm(`¿Cerrar todas las sesiones de ${u.name}? Tendrá que volver a ingresar.`)) return;
+    const ok = await confirm({
+      title: 'Cerrar sesiones',
+      message: `Se cerrarán todas las sesiones de ${u.name}. Tendrá que volver a ingresar.`,
+      confirmText: 'Cerrar sesiones',
+      danger: true,
+    });
+    if (!ok) return;
     setError('');
-    setAviso('');
     try {
       await api(`/users/${u._id}/revoke-sessions`, { method: 'POST' });
-      setAviso(`Se cerraron todas las sesiones de ${u.name}.`);
+      toast(`Se cerraron todas las sesiones de ${u.name}.`);
     } catch (err) {
       setError(err.message);
     }
@@ -63,17 +74,16 @@ export default function Users() {
 
   return (
     <section>
-      <Link to="/admin" className="text-sm text-blue-700 hover:underline">← Volver al panel</Link>
-      <h1 className="mb-4 mt-2 text-2xl font-bold">Usuarios</h1>
+      <Link to="/admin" className="link text-sm">← Volver al panel</Link>
+      <h1 className="page-title mt-2 mb-6">Usuarios</h1>
 
-      {aviso && <p className="mb-3 rounded bg-green-100 p-3 text-green-800">{aviso}</p>}
       {error && <p className="mb-3 text-red-600">{error}</p>}
       {!data && !error && <p>Cargando...</p>}
 
       {data && (
-        <div className="overflow-x-auto rounded border border-slate-200 bg-white">
+        <div className="card overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-100">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs tracking-wide text-slate-500 uppercase dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
               <tr>
                 <th className="p-3">Nombre</th>
                 <th className="p-3">Correo</th>
@@ -86,7 +96,7 @@ export default function Users() {
               {data.users.map((u) => {
                 const propio = u._id === me._id;
                 return (
-                  <tr key={u._id} className="border-b border-slate-100">
+                  <tr key={u._id} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
                     <td className="p-3">{u.name}</td>
                     <td className="p-3">{u.email}</td>
                     <td className="p-3">
@@ -94,16 +104,16 @@ export default function Users() {
                         value={u.role}
                         disabled={propio}
                         onChange={(e) => changeRole(u, e.target.value)}
-                        className="rounded border border-slate-300 p-1 disabled:opacity-50"
+                        className="input w-auto py-1"
                       >
                         {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                       </select>
                     </td>
                     <td className="p-3">
                       {u.suspended ? (
-                        <span className="rounded bg-red-100 px-2 py-1 text-xs text-red-800">Suspendida</span>
+                        <span className="badge badge-red">Suspendida</span>
                       ) : (
-                        <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">Activa</span>
+                        <span className="badge badge-green">Activa</span>
                       )}
                     </td>
                     <td className="space-x-2 p-3 whitespace-nowrap">
@@ -126,7 +136,7 @@ export default function Users() {
           </table>
         </div>
       )}
-      {data && <p className="mt-2 text-sm text-slate-500">Mostrando {data.users.length} de {data.total} usuarios.</p>}
+      {data && <p className="muted mt-3">Mostrando {data.users.length} de {data.total} usuarios.</p>}
     </section>
   );
 }
