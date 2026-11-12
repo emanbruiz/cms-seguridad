@@ -404,4 +404,23 @@ Controles implementados:
 
 Pruebas nuevas en `pentest/caja-gris.ps1` (grupo K): K-01 comentar sin sesión (401), K-02 el comentario de un lector queda pendiente, K-03 no se ve en la lista pública, K-04 no se puede enviar `status` para aprobarse solo (400), K-05 no se puede comentar un borrador (404), K-06 más de 2 enlaces (400), K-07 más de 1000 caracteres (400), K-08 un editor no modera publicaciones ajenas (403), K-09 un lector no modera (403), K-10 el autor aprueba (200), K-11 el aprobado se ve y sin el correo del autor, K-12 un editor no borra comentarios ajenos (403), K-13 el autor borra el suyo (200), K-14 límite de frecuencia (429) y K-15 el borrado definitivo de la publicación elimina sus comentarios.
 
-Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-comentarios.txt`.
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-comentarios.txt` (118 de 118 en OK). En la prueba manual, un comentario con `<script>` fue bloqueado por el WAF antes de llegar a la API.
+
+## Mejora v1.3, paso 5: segmentación de la red de Docker
+
+Motivo: los cuatro contenedores compartían una sola red interna (`backend`). Si se comprometía el WAF o el frontend, el atacante podía conectarse directamente a la API o a MongoDB, saltándose las capas intermedias. Era un riesgo pendiente de la Entrega 1 (R07) y del análisis (movimiento lateral).
+
+Diseño: cuatro redes, una por zona, y cada servicio solo en las que necesita.
+
+| Red | Servicios | Salida a internet |
+|---|---|---|
+| `edge` | WAF (puerto publicado 127.0.0.1:8443) | Sí |
+| `dmz` | WAF y frontend | No |
+| `aplicacion` | Frontend y API | No |
+| `datos` | API y MongoDB | No |
+
+Así, el WAF solo ve al frontend, el frontend solo a la API, y solo la API ve a MongoDB. Es el mismo principio que el diseño en AWS, donde los grupos de seguridad permiten únicamente ALB hacia ECS y ECS hacia DocumentDB.
+
+Verificación: `pentest/verificar-red.ps1` prueba desde dentro de cada contenedor qué puede alcanzar. R-01 WAF hacia el frontend (alcanzable), R-02 y R-03 WAF hacia la API y MongoDB (no resuelve el nombre), R-04 frontend hacia la API (alcanzable), R-05 frontend hacia MongoDB (no resuelve), R-06 API hacia MongoDB (alcanzable) y R-07 la API no tiene salida a internet. Evidencia: `docs/evidencias/red-segmentada.txt`.
+
+Además, el frontend muestra un mensaje claro cuando el WAF bloquea una solicitud (por ejemplo, un comentario con `<script>`): antes decía "Error de red" porque el WAF responde con una página HTML en lugar de JSON.

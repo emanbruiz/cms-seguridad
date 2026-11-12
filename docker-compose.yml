@@ -13,7 +13,7 @@ services:
       - mongo-data:/data/db
       - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
-      - backend
+      - datos
     security_opt:
       - no-new-privileges:true
     mem_limit: 1g
@@ -44,7 +44,8 @@ services:
       mongo:
         condition: service_healthy
     networks:
-      - backend
+      - aplicacion
+      - datos
     volumes:
       - uploads:/app/uploads
     read_only: true
@@ -76,7 +77,8 @@ services:
       api:
         condition: service_healthy
     networks:
-      - backend
+      - dmz
+      - aplicacion
     read_only: true
     tmpfs:
       - /tmp
@@ -116,8 +118,8 @@ services:
     ports:
       - "127.0.0.1:8443:8443"
     networks:
-      - backend
       - edge
+      - dmz
     cap_drop:
       - ALL
     security_opt:
@@ -125,10 +127,18 @@ services:
     mem_limit: 512m
     pids_limit: 200
 
+# Red segmentada por zonas: cada servicio solo ve a su vecino inmediato.
+# edge: la única con salida, solo para el puerto publicado del WAF.
+# dmz: WAF y frontend. aplicacion: frontend y API. datos: API y MongoDB.
+# Las tres internas no tienen salida a internet.
 networks:
-  backend:
-    internal: true
   edge: {}
+  dmz:
+    internal: true
+  aplicacion:
+    internal: true
+  datos:
+    internal: true
 
 volumes:
   mongo-data:
