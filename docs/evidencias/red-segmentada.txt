@@ -1,0 +1,23 @@
+﻿Verificacion de la segmentacion de red (docker compose)
+Fecha: 2026-11-12 00:49
+Resultado: 7 de 7 en OK
+
+
+Id   Prueba                               Esperado              Obtenido              Resultado
+--   ------                               --------              --------              ---------
+R-01 WAF hacia el frontend (web:8080)     alcanzable            alcanzable            OK       
+R-02 WAF hacia la API (api:4000)          no resuelve el nombre no resuelve el nombre OK       
+R-03 WAF hacia MongoDB (mongo:27017)      no resuelve el nombre no resuelve el nombre OK       
+R-04 Frontend hacia la API (api:4000)     alcanzable            alcanzable            OK       
+R-05 Frontend hacia MongoDB (mongo:27017) no resuelve el nombre no resuelve el nombre OK       
+R-06 API hacia MongoDB (mongo:27017)      alcanzable            alcanzable            OK       
+R-07 API hacia internet                   sin salida a internet sin salida a internet OK       
+
+
+
+Redes del proyecto:
+cms_aplicacion  internal=true
+cms_backend  internal=true
+cms_datos  internal=true
+cms_dmz  internal=true
+cms_edge  internal=false
