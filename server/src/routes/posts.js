@@ -2,6 +2,7 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import { Post, CATEGORIES } from '../models/Post.js';
 import { Media } from '../models/Media.js';
+import { Comment } from '../models/Comment.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { validId, validSlug } from '../middleware/params.js';
@@ -259,6 +260,7 @@ router.post('/:id/restore', ...canWrite, validId, validate(emptyBodySchema), asy
 router.delete('/:id/permanent', ...canWrite, validId, async (req, res) => {
   const post = await loadPostFor(req, res, { trash: true });
   if (!post) return;
+  await Comment.deleteMany({ post: post._id });
   await post.deleteOne();
   req.log.info({ userId: String(req.user._id), postId: String(post._id) }, 'post eliminado definitivamente');
   res.json({ ok: true });

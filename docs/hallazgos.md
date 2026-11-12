@@ -381,3 +381,27 @@ Seguridad: el rediseño no cambia la API ni las reglas de acceso. Se respetan la
 Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-diseno.txt` (103 de 103 en OK).
 
 Ajustes posteriores al rediseño: las tarjetas sin imagen destacada muestran un fondo con la inicial de la categoría, para que la cuadrícula se vea pareja; y se agregó `server/scripts/limpiar-pruebas.js`, que borra las cuentas que crea el script de caja gris en cada corrida (solo correos con el patrón de prueba, nunca cuentas admin y solo con `--confirmar`).
+
+## Mejora v1.3, paso 4: comentarios con moderación
+
+Motivo: los comentarios son una función básica de un CMS de contenido, pero en el diseño original se habían descartado por sus riesgos (spam, XSS y moderación). Se reconsideraron haciendo primero el análisis de amenazas y agregando las pruebas correspondientes, como exige la política del proyecto.
+
+Amenazas consideradas con STRIDE:
+
+- Manipulación y XSS almacenado: un comentario con HTML o JavaScript que se ejecuta en el navegador de otros lectores. Control: el comentario es texto plano; React lo muestra como texto (nunca como HTML ni Markdown) y la CSP estricta bloquearía cualquier script en línea. El WAF filtra además los patrones de XSS conocidos.
+- Spam y denegación de servicio: publicar comentarios en masa o con enlaces. Control: solo usuarios registrados; límite de 5 comentarios cada 10 minutos por usuario (independiente de la IP), máximo 2 enlaces y 1000 caracteres; y moderación previa, así que nada se publica sin aprobación.
+- Elevación de privilegios: aprobarse el propio comentario o moderar los de publicaciones ajenas. Control: el estado lo decide el servidor (el esquema estricto rechaza el campo `status`); solo modera el autor de la publicación o un admin; un lector no puede moderar.
+- Elevación de privilegios: borrar comentarios ajenos. Control: solo el autor del comentario, el autor de la publicación o un admin.
+- Divulgación de información: exponer el correo de quien comenta, o comentarios de borradores. Control: la lista pública solo devuelve comentarios aprobados de publicaciones publicadas, y del autor solo el nombre.
+- Repudio: cada comentario, moderación y borrado queda en la auditoría y en el registro de la API, y el comentario guarda quién lo moderó y cuándo.
+
+Controles implementados:
+
+- Modelo `Comment` (publicación, autor, contenido, estado pendiente, aprobado o rechazado, moderador y fecha de moderación).
+- `GET /api/comments?post=` público; `POST /api/comments` con sesión y límite por usuario; `GET /api/comments/moderation` para editores (solo sus publicaciones) y admin (todas); `PATCH /api/comments/:id/status` y `DELETE /api/comments/:id` con verificación de propietario. El borrado definitivo de una publicación borra también sus comentarios.
+- Los comentarios del autor de la publicación o de un admin se aprueban solos.
+- Página de la publicación: sección de comentarios con contador de caracteres. Panel: página de moderación con pestañas Pendientes, Aprobados y Rechazados, y contador de pendientes en el botón.
+
+Pruebas nuevas en `pentest/caja-gris.ps1` (grupo K): K-01 comentar sin sesión (401), K-02 el comentario de un lector queda pendiente, K-03 no se ve en la lista pública, K-04 no se puede enviar `status` para aprobarse solo (400), K-05 no se puede comentar un borrador (404), K-06 más de 2 enlaces (400), K-07 más de 1000 caracteres (400), K-08 un editor no modera publicaciones ajenas (403), K-09 un lector no modera (403), K-10 el autor aprueba (200), K-11 el aprobado se ve y sin el correo del autor, K-12 un editor no borra comentarios ajenos (403), K-13 el autor borra el suyo (200), K-14 límite de frecuencia (429) y K-15 el borrado definitivo de la publicación elimina sus comentarios.
+
+Evidencia: `docs/evidencias/pentest/caja-gris-v1.3-comentarios.txt`.

@@ -56,3 +56,14 @@ export const passwordLimiter = rateLimit({
   keyGenerator: (req) => `usuario:${req.user._id}`,
   message: { error: 'Demasiados intentos, intentá de nuevo en 15 minutos' },
 });
+
+// Comentarios: 5 cada 10 minutos por usuario, contra el spam. Los rechazados por validación no cuentan.
+export const commentLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skipFailedRequests: true,
+  keyGenerator: (req) => `comentarios:${req.user._id}`,
+  message: { error: 'Estás comentando demasiado seguido, esperá unos minutos' },
+});
