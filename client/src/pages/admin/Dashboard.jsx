@@ -11,6 +11,13 @@ export default function Dashboard() {
   const [page, setPage] = useState(1);
   const [tick, setTick] = useState(0);
   const [error, setError] = useState('');
+  const [pendientes, setPendientes] = useState(0);
+
+  useEffect(() => {
+    api('/comments/moderation?status=pendiente&limit=1')
+      .then((d) => setPendientes(d.total))
+      .catch(() => {});
+  }, [tick]);
 
   useEffect(() => {
     api(`/posts/manage?page=${page}&limit=10`)
@@ -51,6 +58,10 @@ export default function Dashboard() {
               <Link to="/admin/audit" className="btn btn-secondary btn-sm">Auditoría</Link>
             </>
           )}
+          <Link to="/admin/comments" className="btn btn-secondary btn-sm">
+            Comentarios
+            {pendientes > 0 && <span className="badge bg-indigo-600 text-white">{pendientes}</span>}
+          </Link>
           <Link to="/admin/trash" className="btn btn-secondary btn-sm">Papelera</Link>
           <Link to="/admin/posts/new" className="btn btn-primary btn-sm">Nuevo post</Link>
         </div>

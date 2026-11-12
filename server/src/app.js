@@ -12,6 +12,7 @@ import userRoutes from './routes/users.js';
 import postRoutes from './routes/posts.js';
 import mediaRoutes from './routes/media.js';
 import auditRoutes from './routes/audit.js';
+import commentRoutes from './routes/comments.js';
 import { generalLimiter } from './middleware/rateLimit.js';
 
 
@@ -40,6 +41,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/comments', commentRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });

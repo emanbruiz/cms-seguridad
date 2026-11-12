@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import MarkdownView from '../components/MarkdownView.jsx';
+import Comments from '../components/Comments.jsx';
 import { api } from '../api.js';
 
 export default function Post() {
@@ -18,6 +19,7 @@ export default function Post() {
   if (!post) return <p className="muted">Cargando...</p>;
 
   return (
+    <>
     <article className="card mx-auto max-w-3xl overflow-hidden">
       {post.featuredImage?.filename && (
         <img src={`/api/media/${post.featuredImage.filename}`} alt="" className="aspect-[21/9] w-full object-cover" />
@@ -41,5 +43,7 @@ export default function Post() {
       )}
       </div>
     </article>
+    <Comments post={post} />
+    </>
   );
 }
